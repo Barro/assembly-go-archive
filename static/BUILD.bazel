@@ -19,7 +19,11 @@ yui_minified(
     ],
 )
 
+# This rule is here to be able to minimize images that have been
+# modified. You should distribute the minified images as long as there
+# are no high resolution originals to convert.
 zopflipng_minified(
     name = "images-min",
     srcs = glob(["images/*.png"]),
+    tags = ["manual"],
 )
