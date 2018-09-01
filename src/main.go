@@ -146,9 +146,23 @@ func (error *UsernamePasswordError) Error() string {
 	return error.message
 }
 
+func is_file_wide_open(filename string) bool {
+	stats, err := os.Stat(filename)
+	if err != nil {
+		return false
+	}
+	if stats.Mode()&044 != 0 {
+		return true
+	}
+	return false
+}
+
 type AuthData map[string]string
 
 func read_auth_data(filename string) (AuthData, error) {
+	if is_file_wide_open(filename) {
+		return nil, &UsernamePasswordError{"File " + filename + " should only be readable by the current user!"}
+	}
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -192,6 +206,10 @@ func _ise(w http.ResponseWriter) {
 }
 
 func BasicAuth(handler http.HandlerFunc, auth_filename string) http.HandlerFunc {
+	if is_file_wide_open(auth_filename) {
+		log.Fatal("File " + auth_filename + " should only be readable by the current user!")
+	}
+
 	_unauthorized := func(w http.ResponseWriter) {
 		w.Header().Set("WWW-Authenticate", `Basic realm="Assembly Archive API"`)
 		w.WriteHeader(401)
