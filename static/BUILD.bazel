@@ -6,7 +6,7 @@ yui_minified(
         "css/style.css",
         "css/reset.css",
         "css/960.css",
-        "css/text.css"
+        "css/text.css",
     ],
 )
 
