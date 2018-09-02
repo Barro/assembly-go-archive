@@ -142,6 +142,7 @@ func main() {
 	port := flag.Int("port", 8080, "Port to listen to")
 	data_dir := flag.String("dir-data", "_data", "Data directory")
 	static_dir := flag.String("dir-static", "_static", "Static files directory")
+	authfile := flag.String("authfile", "auth.txt", "File with username:password lines")
 	devmode := flag.Bool("dev", false, "Enable development mode")
 
 	flag.Parse()
@@ -150,12 +151,11 @@ func main() {
 		DataDir:   *data_dir,
 		StaticDir: *static_dir,
 	}
-	// render(os.Stdout)
 	if *devmode {
 		log.Println("Development mode enabled. DO NOT USE THIS IN PUBLIC! /exit is enabled!")
 		http.HandleFunc("/exit", exit)
 	}
-	http.HandleFunc("/api/", StripPrefix("/api/", BasicAuth("auth.txt", api.Renderer(settings))))
+	http.HandleFunc("/api/", StripPrefix("/api/", BasicAuth(*authfile, api.Renderer(settings))))
 	http.HandleFunc("/site/", StripPrefix("/site/", site.SiteRenderer(settings)))
 	http.HandleFunc("/teapot/", RenderTeapot)
 	http.Handle("/_data/", http.StripPrefix("/_data/", http.FileServer(http.Dir("_data/"))))
