@@ -20,8 +20,14 @@ go_library(
     importpath = "api",
 )
 
+go_library(
+    name = "site",
+    srcs = ["site.go"],
+    importpath = "site",
+)
+
 go_binary(
     name = "assembly-archive",
     srcs = ["main.go"],
-    deps = [":api"],
+    deps = [":api", ":site"],
 )

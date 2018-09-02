@@ -5,138 +5,13 @@ import (
 	"bufio"
 	"crypto/subtle"
 	"fmt"
-	"html/template"
-	"io"
 	//	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"site"
 	"strings"
 )
-
-type Resolution struct {
-	X int
-	Y int
-}
-
-type ImageInfo struct {
-	Filename   string
-	Resolution Resolution
-}
-
-type TypedImage struct {
-	Type_ string
-	Image ImageInfo
-}
-
-type EntryThumbnail struct {
-	TargetPage       string
-	Title            string
-	Author           string
-	DefaultThumbnail ImageInfo
-	Thumbnails       []TypedImage
-}
-
-type Section struct {
-	Name        string
-	Description string
-	Ongoing     bool
-	Ordered     bool
-	Entries     []EntryThumbnail
-}
-
-type PageContext struct {
-	Title   string
-	RootUrl string
-	Url     string
-}
-
-func render_header(wr io.Writer, context PageContext) {
-	t := template.Must(template.New("header").Parse(`
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-
-<title>
-{{ if .Title }}
-  {{ .Title }} &ndash; Assembly Archive
-{{ else }}
-  Assembly Archive
-{{ end }}
-</title>
-
-<tal:block tal:content="structure provider:metadata" />
-
-<meta property="fb:page_id" content="183599045012296" />
-
-<link rel="shortcut icon" type="image/vnd.microsoft.icon"
-      href="/static/images/favicon.ico" />
-<link rel="icon" type="image/vnd.microsoft.icon"
-      href="/static/images/favicon.ico" />
-
-<!-- List of CSS files that are optimized and appended into one with yui-compressor -->
-<!-- <link rel="stylesheet" href="/static/css/reset.css" /> -->
-<!-- <link rel="stylesheet" href="/static/css/960.css" /> -->
-<!-- <link rel="stylesheet" href="/static/css/text.css" /> -->
-<!-- <link rel="stylesheet" href="/static/css/style.css" /> -->
-
-<link rel="stylesheet" href="/static/allstyles-min.css" />
-
-<meta name="viewport" content="width=640" />
-
-<link rel="search" type="application/opensearchdescription+xml"
-title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
-
-</head>
-<body>
-`))
-	t.Execute(wr, context)
-}
-
-func render_thumbnail(wr io.Writer, thumbnail EntryThumbnail) {
-	t := template.Must(template.New("thumbnail").Parse(`
-<a class="thumbnail" href="{{.TargetPage}}">
-  <img class="thumbnail-image"
-    src="{{.TargetPage}}/{{.DefaultThumbnail.Filename}}"
-    alt="{{.Title}}"
-  />
-  {{.Title}}
-  <span class="by">{{.Author}}</span>
-</a>
-`))
-	t.Execute(wr, thumbnail)
-}
-
-func render_page(w http.ResponseWriter, r *http.Request) {
-	render(w)
-}
-
-func render(w io.Writer) {
-	context := PageContext{
-		Title:   "",
-		RootUrl: "http://localhost:4000",
-		Url:     "http://localhost:4000",
-	}
-	render_header(w, context)
-
-	thumbnail := EntryThumbnail{
-		TargetPage: "/section/otsikko-by-autori",
-		Title:      "otsikko",
-		Author:     "autori",
-		DefaultThumbnail: ImageInfo{
-			Filename: "thumbnail.png",
-			Resolution: Resolution{
-				X: 10,
-				Y: 10,
-			},
-		},
-		Thumbnails: []TypedImage{},
-	}
-
-	// }
-	render_thumbnail(w, thumbnail)
-}
 
 type UsernamePasswordError struct {
 	message string
@@ -201,11 +76,11 @@ func has_username_password(users AuthData, username, password string) bool {
 }
 
 func _ise(w http.ResponseWriter) {
-	w.WriteHeader(500)
+	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte("Internal server error!\n"))
 }
 
-func BasicAuth(handler http.HandlerFunc, auth_filename string) http.HandlerFunc {
+func BasicAuth(auth_filename string, handler http.HandlerFunc) http.HandlerFunc {
 	if is_file_wide_open(auth_filename) {
 		log.Fatal("File " + auth_filename + " should only be readable by the current user!")
 	}
@@ -237,10 +112,29 @@ func BasicAuth(handler http.HandlerFunc, auth_filename string) http.HandlerFunc 
 	}
 }
 
+func RenderTeapot(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusTeapot)
+	w.Write([]byte("I'm a teapot\n"))
+}
+
+func StripPrefix(prefix string, handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = r.URL.Path[len(prefix):]
+		handler(w, r)
+	}
+}
+
 func main() {
 	fmt.Println("Hello")
+	settings := site.SiteSettings{
+		DataDir:   "_data",
+		StaticDir: "_static",
+	}
 	// render(os.Stdout)
-	http.HandleFunc("/api/", BasicAuth(api.Render, "auth.txt"))
-	http.HandleFunc("/site/", render_page)
+	http.HandleFunc("/api/", StripPrefix("/api/", BasicAuth("auth.txt", api.Render)))
+	http.HandleFunc("/site/", StripPrefix("/site/", site.SiteRenderer(settings)))
+	http.HandleFunc("/teapot/", RenderTeapot)
+	http.Handle("/_data/", http.StripPrefix("/_data/", http.FileServer(http.Dir("_data/"))))
+	http.Handle("/_static/", http.StripPrefix("/_site/", http.FileServer(http.Dir("_site/"))))
 	log.Fatal(http.ListenAndServe(":4000", nil))
 }
