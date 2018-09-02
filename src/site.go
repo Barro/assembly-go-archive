@@ -1,6 +1,7 @@
 package site
 
 import (
+	"base"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -272,16 +273,11 @@ func render_thumbnail(wr io.Writer, thumbnail ThumbnailedEntry) {
 	t.Execute(wr, thumbnail)
 }
 
-type SiteSettings struct {
-	DataDir   string
-	StaticDir string
-}
-
-func render_request(settings SiteSettings, w http.ResponseWriter, r *http.Request) {
+func render_request(settings base.SiteSettings, w http.ResponseWriter, r *http.Request) {
 	render(w)
 }
 
-func SiteRenderer(settings SiteSettings) http.HandlerFunc {
+func SiteRenderer(settings base.SiteSettings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		render_request(settings, w, r)
 	}

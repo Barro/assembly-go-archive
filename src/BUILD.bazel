@@ -15,19 +15,27 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 # )
 
 go_library(
+    name = "base",
+    srcs = ["base.go"],
+    importpath = "base",
+)
+
+go_library(
     name = "api",
     srcs = ["api.go"],
+    deps = [":base"],
     importpath = "api",
 )
 
 go_library(
     name = "site",
     srcs = ["site.go"],
+    deps = [":base"],
     importpath = "site",
 )
 
 go_binary(
     name = "assembly-archive",
     srcs = ["main.go"],
-    deps = [":api", ":site"],
+    deps = [":api", ":site", ":base"],
 )

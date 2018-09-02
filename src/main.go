@@ -2,10 +2,11 @@ package main
 
 import (
 	"api"
+	"base"
 	"bufio"
 	"crypto/subtle"
+	"flag"
 	"fmt"
-	//	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -124,17 +125,42 @@ func StripPrefix(prefix string, handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// Terminate by client request.
+func exit(w http.ResponseWriter, r *http.Request) {
+	user, _, _ := r.BasicAuth()
+	ip_address := r.RemoteAddr
+	forwarded_for := r.Header.Get("X-Forwarded-For")
+
+	log.Println(
+		"Exit request from '" + user + "' at " + ip_address + " <" + forwarded_for + ">")
+
+	os.Exit(0)
+}
+
 func main() {
-	fmt.Println("Hello")
-	settings := site.SiteSettings{
-		DataDir:   "_data",
-		StaticDir: "_static",
+	host := flag.String("host", "localhost", "Host interface to listen to")
+	port := flag.Int("port", 8080, "Port to listen to")
+	data_dir := flag.String("dir-data", "_data", "Data directory")
+	static_dir := flag.String("dir-static", "_static", "Static files directory")
+	devmode := flag.Bool("dev", false, "Enable development mode")
+
+	flag.Parse()
+
+	settings := base.SiteSettings{
+		DataDir:   *data_dir,
+		StaticDir: *static_dir,
 	}
 	// render(os.Stdout)
-	http.HandleFunc("/api/", StripPrefix("/api/", BasicAuth("auth.txt", api.Render)))
+	if *devmode {
+		log.Println("Development mode enabled. DO NOT USE THIS IN PUBLIC! /exit is enabled!")
+		http.HandleFunc("/exit", exit)
+	}
+	http.HandleFunc("/api/", StripPrefix("/api/", BasicAuth("auth.txt", api.Renderer(settings))))
 	http.HandleFunc("/site/", StripPrefix("/site/", site.SiteRenderer(settings)))
 	http.HandleFunc("/teapot/", RenderTeapot)
 	http.Handle("/_data/", http.StripPrefix("/_data/", http.FileServer(http.Dir("_data/"))))
 	http.Handle("/_static/", http.StripPrefix("/_site/", http.FileServer(http.Dir("_site/"))))
-	log.Fatal(http.ListenAndServe(":4000", nil))
+	listen_addr := fmt.Sprintf("%s:%d", *host, *port)
+	log.Printf("Listening to %s", listen_addr)
+	log.Fatal(http.ListenAndServe(listen_addr, nil))
 }
