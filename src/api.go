@@ -4,6 +4,9 @@ import (
 	"archive/tar"
 	"base"
 	"compress/gzip"
+	"encoding/base64"
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -20,6 +24,14 @@ type ExtractError struct {
 }
 
 func (error *ExtractError) Error() string {
+	return error.message
+}
+
+type InputError struct {
+	message string
+}
+
+func (error *InputError) Error() string {
 	return error.message
 }
 
@@ -32,6 +44,55 @@ func _ise(w http.ResponseWriter, err error) {
 func bad_request(w http.ResponseWriter, message string) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte(message + "\n"))
+}
+
+// Creates a checksum of a file that is appropriate for caching for
+// long time periods. For less than 1 year, though.
+func create_file_checksum(filename string) (string, error) {
+	stats, err := os.Stat(filename)
+	if err != nil {
+		return "", err
+	}
+	modified := stats.ModTime()
+	// Same values can be encountered every 136 years.
+	value := uint32(modified.Unix())
+
+	buffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(buffer, value)
+	str := base64.RawURLEncoding.EncodeToString(buffer)
+	// All 32 bit values fit in 6 characters (= 36 bits space).
+	return str[:6], nil
+}
+
+type ResolutionError struct {
+	message string
+}
+
+func (error *ResolutionError) Error() string {
+	return error.message
+}
+
+func string_to_resolution(value string) (base.Resolution, error) {
+	parts := strings.SplitN(value, "x", 2)
+	err_res := base.Resolution{}
+	if len(parts) != 2 {
+		return err_res, &ResolutionError{"Resolution should be in ##x## format!"}
+	}
+	x, err_x := strconv.Atoi(parts[0])
+	if err_x != nil {
+		return err_res, err_x
+	}
+	if x < 1 {
+		return err_res, &ResolutionError{"X resolution " + string(x) + " should be positive"}
+	}
+	y, err_y := strconv.Atoi(parts[1])
+	if err_y != nil {
+		return err_res, err_y
+	}
+	if y < 1 {
+		return err_res, &ResolutionError{"Y resolution " + string(y) + " should be positive"}
+	}
+	return base.Resolution{X: x, Y: y}, nil
 }
 
 func extract_tar_entry(target string, tar_reader *tar.Reader, header *tar.Header) error {
@@ -86,6 +147,9 @@ func extract_tarball(directory string, gzip_stream io.Reader) error {
 		} else if strings.Contains(header.Name, "../") {
 			// This catches directory traversal traps:
 			return &ExtractError{"Detected unsafe directory path: " + header.Name}
+		} else if strings.Contains(header.Name, "//") {
+			// Just in case forbid double slashes:
+			return &ExtractError{"Detected unsafe path leading to potential absolute path in archive: " + header.Name}
 		}
 
 		target := filepath.Join(directory, header.Name)
@@ -95,6 +159,97 @@ func extract_tarball(directory string, gzip_stream io.Reader) error {
 		}
 	}
 	return nil
+}
+
+type OrderedYear struct {
+	Path        string
+	SectionKeys []string
+}
+
+func all_items_are_directories(root string, items []string) bool {
+	for _, item := range items {
+		path := filepath.Join(root, item)
+		info, err_stat := os.Stat(path)
+		if err_stat != nil {
+			return false
+		}
+		if !info.IsDir() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func read_year_info(directory string, url_path string) (OrderedYear, error) {
+	data, err_json := ioutil.ReadFile(filepath.Join(directory, "meta.json"))
+	empty_year := OrderedYear{}
+	if err_json != nil {
+		return empty_year, err_json
+	}
+
+	var keys []string
+	err_unmarshal := json.Unmarshal(data, &keys)
+	if err_unmarshal != nil {
+		return empty_year, err_unmarshal
+	}
+	if !all_items_are_directories(directory, keys) {
+		return empty_year, &InputError{"Not all sections for year '" + url_path + "' are valid!"}
+	}
+
+	return OrderedYear{
+		Path:        url_path,
+		SectionKeys: keys,
+	}, nil
+}
+
+type OrderedSection struct {
+	Path        string
+	Description string
+	EntryKeys   []string
+}
+
+func read_section_info(directory string, url_path string) (OrderedSection, error) {
+	return OrderedSection{}, nil
+}
+
+func read_entry_info(directory string, url_path string) (base.EntryInfo, error) {
+	data, err := ioutil.ReadFile(filepath.Join(directory, "meta.json"))
+	key := filepath.Base(directory)
+	entry := base.EntryInfo{Path: url_path, Key: key}
+	var meta_json_raw interface{}
+	err_unmarshal := json.Unmarshal(data, &meta_json_raw)
+	if err_unmarshal != nil {
+		return entry, err_unmarshal
+	}
+
+	meta_root := meta_json_raw.(map[string]interface{})
+	entry.Title = meta_root["title"].(string)
+	entry.Author = meta_root["author"].(string)
+	entry.Asset = meta_root["asset"].(string)
+
+	_json_to_thumbnail := func(value map[string]string) (base.ThumbnailInfo, error) {
+		checksum, err := create_file_checksum(filepath.Join(directory, value["path"]))
+		if err != nil {
+			return base.ThumbnailInfo{}, err
+		}
+		resolution, err_res := string_to_resolution(value["resolution"])
+		if err_res != nil {
+			return base.ThumbnailInfo{}, err_res
+		}
+		return base.ThumbnailInfo{
+			url_path + "/" + value["path"],
+			&checksum,
+			resolution,
+			value["type"]}, nil
+	}
+	entry.Thumbnails.Default, err = _json_to_thumbnail(
+		meta_root["thumbnail"].(map[string]string))
+	if err != nil {
+		return entry, err
+	}
+
+	return entry, nil
 }
 
 func handle_year(

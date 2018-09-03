@@ -2,65 +2,22 @@ package site
 
 import (
 	"base"
-	"encoding/base64"
-	"encoding/binary"
-	"encoding/json"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"os"
-	"path/filepath"
+	"state"
 )
 
-type Resolution struct {
-	X int
-	Y int
-}
-
-type ImageInfo struct {
-	Filename   string
-	Resolution Resolution
-}
-
-type TypedImage struct {
-	Type_ string
-	Image ImageInfo
-}
-
-type ThumbnailedEntry struct {
-	Path             string
-	Key              string
-	Title            string
-	Author           string
-	DefaultThumbnail ImageInfo
-	Thumbnails       []TypedImage
-}
-
-type Section struct {
-	Path        string
-	Key         string
-	Name        string
-	Description string
-	IsRanked    bool
-	Entries     []ThumbnailedEntry
-}
-
-type Year struct {
-	Path     string
-	Key      string
-	Name     string
-	Sections []Section
-}
-
 type PageContext struct {
-	Title   string
-	RootUrl string
-	Url     string
+	Title       string
+	RootUrl     string
+	Url         string
+	CurrentYear int
+	SiteState   *state.SiteState
 }
 
-func in_array(array []ThumbnailedEntry, entry ThumbnailedEntry) bool {
+func in_array(array []base.ThumbnailedEntry, entry base.ThumbnailedEntry) bool {
 	for _, array_entry := range array {
 		if array_entry.Path == entry.Path {
 			return true
@@ -71,10 +28,10 @@ func in_array(array []ThumbnailedEntry, entry ThumbnailedEntry) bool {
 
 // Randomly selects a number of entries by taking no more than 2 from
 // each section.
-func random_select_entries(year Year, amount int) []ThumbnailedEntry {
+func random_select_entries(year base.Year, amount int) []base.ThumbnailedEntry {
 	total_sections := len(year.Sections)
 	section_indexes := rand.Perm(total_sections * 2)
-	var result []ThumbnailedEntry
+	var result []base.ThumbnailedEntry
 	for _, index_value := range section_indexes {
 		if len(result) == amount {
 			break
@@ -95,12 +52,12 @@ func random_select_entries(year Year, amount int) []ThumbnailedEntry {
 // If the section is ranked, returns the top "amount" entries. If it's
 // not, returns random selection of entries. This is to promote the
 // best ranked entries where it's possible.
-func peek_section_entries(section Section, amount int) []ThumbnailedEntry {
+func peek_section_entries(section base.Section, amount int) []base.ThumbnailedEntry {
 	if section.IsRanked {
 		return section.Entries[:amount]
 	}
 
-	var result []ThumbnailedEntry
+	var result []base.ThumbnailedEntry
 	for _, index := range rand.Perm(len(section.Entries))[:amount] {
 		result = append(result, section.Entries[index])
 	}
@@ -121,102 +78,24 @@ func peek_section_entries(section Section, amount int) []ThumbnailedEntry {
     ],
 }
 */
-type ThumbnailInfo struct {
-	Path     string
-	Checksum *string
-	Size     Resolution
-	Type     string
+
+func entry_info_to_thumbnail(entry base.EntryInfo) base.ThumbnailedEntry {
+	return base.ThumbnailedEntry{}
 }
 
-type TypedThumbnails struct {
-	Type       string
-	Thumbnails []ThumbnailInfo
+func render_year(ctx PageContext, wr io.Writer, year *base.Year) {
+
 }
 
-type Thumbnails struct {
-	Default ThumbnailInfo
-	Extra   []TypedThumbnails
+func render_section(ctx PageContext, wr io.Writer, section *base.Section) {
+
 }
 
-type ExternalLinksSection struct {
-	Name  string
-	Links []string
+func render_entry(ctx PageContext, wr io.Writer, entry *base.EntryInfo) {
+
 }
 
-// Structure that has all known data about an entry.
-type EntryInfo struct {
-	Path          string
-	Key           string
-	Title         string
-	Author        string
-	Asset         string
-	Description   string
-	ExternalLinks []ExternalLinksSection
-	Thumbnails    Thumbnails
-}
-
-func string_to_resolution(value string) Resolution {
-	return Resolution{0, 0}
-}
-
-// Creates a checksum of a file that is appropriate for caching for
-// long time periods. For less than 1 year, though.
-func create_file_checksum(filename string) (string, error) {
-	stats, err := os.Stat(filename)
-	if err != nil {
-		return "", err
-	}
-	modified := stats.ModTime()
-	// Same values can be encountered every 136 years.
-	value := uint32(modified.Unix())
-
-	buffer := make([]byte, 4)
-	binary.LittleEndian.PutUint32(buffer, value)
-	str := base64.RawURLEncoding.EncodeToString(buffer)
-	// All 32 bit values fit in 6 characters (= 36 bits space).
-	return str[:6], nil
-}
-
-func read_entry_info(directory string, url_path string) (EntryInfo, error) {
-	data, err := ioutil.ReadFile(filepath.Join(directory, "meta.json"))
-	key := filepath.Base(directory)
-	entry := EntryInfo{Path: url_path, Key: key}
-	var meta_json_raw interface{}
-	err_unmarshal := json.Unmarshal(data, &meta_json_raw)
-	if err_unmarshal != nil {
-		return entry, err_unmarshal
-	}
-
-	meta_root := meta_json_raw.(map[string]interface{})
-	entry.Title = meta_root["title"].(string)
-	entry.Author = meta_root["author"].(string)
-	entry.Asset = meta_root["asset"].(string)
-
-	_json_to_thumbnail := func(value map[string]string) (ThumbnailInfo, error) {
-		checksum, err := create_file_checksum(filepath.Join(directory, value["path"]))
-		if err != nil {
-			return ThumbnailInfo{}, err
-		}
-		return ThumbnailInfo{
-			url_path + "/" + value["path"],
-			&checksum,
-			string_to_resolution(value["resolution"]),
-			value["type"]}, nil
-	}
-	entry.Thumbnails.Default, err = _json_to_thumbnail(
-		meta_root["thumbnail"].(map[string]string))
-	if err != nil {
-		return entry, err
-	}
-
-	return entry, nil
-}
-
-func entry_info_to_thumbnail(entry EntryInfo) ThumbnailedEntry {
-	return ThumbnailedEntry{}
-}
-
-func render_header(wr io.Writer, context PageContext) {
+func render_header(ctx PageContext, wr io.Writer) {
 	t := template.Must(template.New("header").Parse(`
 <!doctype html>
 <html lang="en">
@@ -256,10 +135,10 @@ title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
 </head>
 <body>
 `))
-	t.Execute(wr, context)
+	t.Execute(wr, ctx)
 }
 
-func render_thumbnail(wr io.Writer, thumbnail ThumbnailedEntry) {
+func render_thumbnail(wr io.Writer, thumbnail base.ThumbnailedEntry) {
 	t := template.Must(template.New("thumbnail").Parse(`
 <a class="thumbnail" href="{{.Path}}">
   <img class="thumbnail-image"
@@ -273,7 +152,10 @@ func render_thumbnail(wr io.Writer, thumbnail ThumbnailedEntry) {
 	t.Execute(wr, thumbnail)
 }
 
-func render_request(settings base.SiteSettings, w http.ResponseWriter, r *http.Request) {
+func render_request(
+	settings base.SiteSettings,
+	w http.ResponseWriter,
+	r *http.Request) {
 	render(w)
 }
 
@@ -284,26 +166,28 @@ func SiteRenderer(settings base.SiteSettings) http.HandlerFunc {
 }
 
 func render(w io.Writer) {
-	context := PageContext{
+	ctx := PageContext{
 		Title:   "",
 		RootUrl: "http://localhost:4000",
 		Url:     "http://localhost:4000",
 	}
-	render_header(w, context)
+	render_header(ctx, w)
 
-	thumbnail := ThumbnailedEntry{
+	checksum := "sadf12"
+	thumbnail := base.ThumbnailedEntry{
 		Path:   "/section/otsikko-by-autori",
 		Key:    "otsikko-by-autori",
 		Title:  "otsikko",
 		Author: "autori",
-		DefaultThumbnail: ImageInfo{
-			Filename: "thumbnail.png",
-			Resolution: Resolution{
-				X: 10,
-				Y: 10,
+		Thumbnails: base.Thumbnails{
+			Default: base.ThumbnailInfo{
+				Path:     "/section/otsikko-by-autori/thumbnail.png",
+				Checksum: &checksum,
+				Size:     base.Resolution{10, 10},
+				Type:     "image/png",
 			},
+			Extra: []base.TypedThumbnails{},
 		},
-		Thumbnails: []TypedImage{},
 	}
 
 	// }

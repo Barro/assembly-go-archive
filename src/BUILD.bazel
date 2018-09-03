@@ -21,16 +21,23 @@ go_library(
 )
 
 go_library(
+    name = "state",
+    srcs = ["state.go"],
+    deps = [":base"],
+    importpath = "state",
+)
+
+go_library(
     name = "api",
     srcs = ["api.go"],
-    deps = [":base"],
+    deps = [":base", ":state"],
     importpath = "api",
 )
 
 go_library(
     name = "site",
     srcs = ["site.go"],
-    deps = [":base"],
+    deps = [":base", ":state"],
     importpath = "site",
 )
 
