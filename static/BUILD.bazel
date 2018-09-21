@@ -3,9 +3,9 @@ load(":static.bzl", "yui_minified", "zopflipng_minified")
 yui_minified(
     name = "allstyles-min.css",
     srcs = [
-        "css/style.css",
-        "css/reset.css",
         "css/960.css",
+        "css/reset.css",
+        "css/style.css",
         "css/text.css",
     ],
 )
@@ -14,8 +14,8 @@ yui_minified(
     name = "allscripts-min.js",
     srcs = [
         "js/archive.js",
-        "js/jquery-1.6.2.min.js",
         "js/html5placeholder-1.01.jquery.min.js",
+        "js/jquery-1.6.2.min.js",
     ],
 )
 

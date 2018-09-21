@@ -23,26 +23,36 @@ go_library(
 go_library(
     name = "state",
     srcs = ["state.go"],
-    deps = [":base"],
     importpath = "state",
+    deps = [":base"],
 )
 
 go_library(
     name = "api",
     srcs = ["api.go"],
-    deps = [":base", ":state"],
     importpath = "api",
+    deps = [
+        ":base",
+        ":state",
+    ],
 )
 
 go_library(
     name = "site",
     srcs = ["site.go"],
-    deps = [":base", ":state"],
     importpath = "site",
+    deps = [
+        ":base",
+        ":state",
+    ],
 )
 
 go_binary(
     name = "assembly-archive",
     srcs = ["main.go"],
-    deps = [":api", ":site", ":base"],
+    deps = [
+        ":api",
+        ":base",
+        ":site",
+    ],
 )
