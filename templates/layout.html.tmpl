@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<title>
+{{ if .Title }}
+  {{ .Title }} &ndash; Assembly Archive
+{{ else }}
+  Assembly Archive
+{{ end }}
+</title>
+
+<tal:block tal:content="structure provider:metadata" />
+
+<meta property="fb:page_id" content="183599045012296" />
+
+<link rel="shortcut icon" type="image/vnd.microsoft.icon"
+      href="/static/images/favicon.ico" />
+<link rel="icon" type="image/vnd.microsoft.icon"
+      href="/static/images/favicon.ico" />
+
+<!-- List of CSS files that are optimized and appended into one with yui-compressor -->
+<!-- <link rel="stylesheet" href="/static/css/reset.css" /> -->
+<!-- <link rel="stylesheet" href="/static/css/960.css" /> -->
+<!-- <link rel="stylesheet" href="/static/css/text.css" /> -->
+<!-- <link rel="stylesheet" href="/static/css/style.css" /> -->
+
+<link rel="stylesheet" href="/static/allstyles-min.css" />
+
+<meta name="viewport" content="width=640" />
+
+<link rel="search" type="application/opensearchdescription+xml"
+title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
+
+</head>
+<body>
+  <div id="main" class="container_16">
+
+    <header id="header" class="clearfix">
+      <div class="alpha grid_5" id="archive-logo">
+        <a id="archive-logo-image" tal:attributes="href python:view.url(view) != view.application_url('index') and view.application_url() or None" title="Assembly Archive">
+          <!-- <img tal:attributes="src context/@@layouthelper/static/images/archive-logo.png" alt="Assembly Archive"/> -->
+        </a>
+      </div>
+      <tal:block tal:condition="python: context.page != view.application">
+        <a id="mobile-logo" tal:attributes="href view/application_url"></a>
+      </tal:block>
+      <tal:block tal:condition="python: context.page == view.application">
+        <a id="mobile-logo"></a>
+      </tal:block>
+
+      <nav class="grid_8 omega">
+        <ul tal:replace="structure context/@@yearlynavigation" />
+      </nav>
+
+      <!--
+      <div class="frontpage-search hide-mobile">
+        <form tal:attributes="action string: ${view/application_url}/@@search"
+              method="get" id="searchform"><input type="search" name="q" accesskey="f" tal:attributes="value python: view.request.form.get('q', '')" placeholder="Search..." /></form>
+      </div>
+      -->
+
+    </header>
+
+    {{template "page-content" .}}
+
+
+    <!--
+    <div class="mobile-search hide-desktop">
+      <form tal:attributes="action string: ${view/application_url}/@@search"
+            method="get"><input type="search" name="q" accesskey="f" tal:attributes="value python: view.request.form.get('q', '')" placeholder="Search..." /></form>
+    </div>
+    -->
+
+    <footer id="footer" class="clearfix">
+      <a tal:attributes="href python:view.application_url('description')">About</a> &middot;
+      <a tal:attributes="href python:view.application_url('feedback') + '?page=' + '/'.join(x.__name__ for x in view.get_path(context, True)[1:])">Send us feedback about this page</a>
+      &middot;
+      <a href="http://www.assembly.org/">assembly.org</a>
+    </footer>
+  </div>
+
+<!-- List of JS files that are optimized and appended into one with yui-compressor -->
+<!-- <script type="text/javascript" src="/@@/asm.archive/js/jquery-1.6.2.min.js"></script> -->
+<!-- <script type="text/javascript" src="/@@/asm.archive/js/html5placeholder-1.01.jquery.min.js"></script> -->
+<!-- <script type="text/javascript" src="/@@/asm.archive/js/archive.js"></script> -->
+
+<script type="text/javascript">
+(function() {
+  function async_load(){
+    var s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.async = true;
+    s.src = (document.location.protocol + '//' +
+             document.location.host + '/@@/asm.archive/allscripts-min.js');
+    var x = document.getElementsByTagName('script')[0];
+    x.parentNode.insertBefore(s, x);
+  }
+  if (window.attachEvent) {
+    window.attachEvent('onload', async_load);
+  } else {
+    window.addEventListener('load', async_load, false);
+  }
+})();
+</script>
+
+</body>
+</html>

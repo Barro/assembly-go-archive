@@ -142,14 +142,17 @@ func main() {
 	port := flag.Int("port", 8080, "Port to listen to")
 	data_dir := flag.String("dir-data", "_data", "Data directory")
 	static_dir := flag.String("dir-static", "_static", "Static files directory")
+	templates_dir := flag.String(
+		"dir-templates", "templates", "Site templates directory")
 	authfile := flag.String("authfile", "auth.txt", "File with username:password lines")
 	devmode := flag.Bool("dev", false, "Enable development mode")
 
 	flag.Parse()
 
 	settings := base.SiteSettings{
-		DataDir:   *data_dir,
-		StaticDir: *static_dir,
+		DataDir:      *data_dir,
+		StaticDir:    *static_dir,
+		TemplatesDir: *templates_dir,
 	}
 	if *devmode {
 		log.Println("Development mode enabled. DO NOT USE THIS IN PUBLIC! /exit is enabled!")
@@ -158,8 +161,8 @@ func main() {
 	http.HandleFunc("/api/", StripPrefix("/api/", BasicAuth(*authfile, api.Renderer(settings))))
 	http.HandleFunc("/site/", StripPrefix("/site/", site.SiteRenderer(settings)))
 	http.HandleFunc("/teapot/", RenderTeapot)
-	http.Handle("/_data/", http.StripPrefix("/_data/", http.FileServer(http.Dir("_data/"))))
-	http.Handle("/_static/", http.StripPrefix("/_site/", http.FileServer(http.Dir("_site/"))))
+	http.Handle("/site/_data/", http.StripPrefix("/site/_data/", http.FileServer(http.Dir(settings.DataDir))))
+	http.Handle("/site/_static/", http.StripPrefix("/site/_static/", http.FileServer(http.Dir(settings.StaticDir))))
 	listen_addr := fmt.Sprintf("%s:%d", *host, *port)
 	log.Printf("Listening to %s", listen_addr)
 	log.Fatal(http.ListenAndServe(listen_addr, nil))

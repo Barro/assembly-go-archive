@@ -1,8 +1,9 @@
 package base
 
 type SiteSettings struct {
-	DataDir   string
-	StaticDir string
+	DataDir      string
+	StaticDir    string
+	TemplatesDir string
 }
 
 type Resolution struct {

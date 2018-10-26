@@ -2,10 +2,12 @@ package site
 
 import (
 	"base"
+	"fmt"
 	"html/template"
 	"io"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"state"
 )
 
@@ -95,46 +97,8 @@ func render_entry(ctx PageContext, wr io.Writer, entry *base.EntryInfo) {
 
 }
 
-func render_header(ctx PageContext, wr io.Writer) {
-	t := template.Must(template.New("header").Parse(`
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-
-<title>
-{{ if .Title }}
-  {{ .Title }} &ndash; Assembly Archive
-{{ else }}
-  Assembly Archive
-{{ end }}
-</title>
-
-<tal:block tal:content="structure provider:metadata" />
-
-<meta property="fb:page_id" content="183599045012296" />
-
-<link rel="shortcut icon" type="image/vnd.microsoft.icon"
-      href="/static/images/favicon.ico" />
-<link rel="icon" type="image/vnd.microsoft.icon"
-      href="/static/images/favicon.ico" />
-
-<!-- List of CSS files that are optimized and appended into one with yui-compressor -->
-<!-- <link rel="stylesheet" href="/static/css/reset.css" /> -->
-<!-- <link rel="stylesheet" href="/static/css/960.css" /> -->
-<!-- <link rel="stylesheet" href="/static/css/text.css" /> -->
-<!-- <link rel="stylesheet" href="/static/css/style.css" /> -->
-
-<link rel="stylesheet" href="/static/allstyles-min.css" />
-
-<meta name="viewport" content="width=640" />
-
-<link rel="search" type="application/opensearchdescription+xml"
-title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
-
-</head>
-<body>
-`))
+func render_page(ctx PageContext, wr io.Writer) {
+	t := template.Must(template.ParseFiles("templates/layout.html.tmpl"))
 	t.Execute(wr, ctx)
 }
 
@@ -152,16 +116,88 @@ func render_thumbnail(wr io.Writer, thumbnail base.ThumbnailedEntry) {
 	t.Execute(wr, thumbnail)
 }
 
-func render_request(
+type RequestHandlerFunc func(
 	settings base.SiteSettings,
+	path_elements map[string]string,
+	w http.ResponseWriter,
+	r *http.Request)
+
+func handle_entry(
+	settings base.SiteSettings,
+	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
+	//fmt.Printf("%v %s\n", path_elements, r.URL)
 	render(w)
+}
+
+func handle_section(
+	settings base.SiteSettings,
+	path_elements map[string]string,
+	w http.ResponseWriter,
+	r *http.Request) {
+	//fmt.Printf("%v %s\n", path_elements, r.URL)
+	render(w)
+}
+
+func handle_year(
+	settings base.SiteSettings,
+	path_elements map[string]string,
+	w http.ResponseWriter,
+	r *http.Request) {
+	//fmt.Printf("%v %s\n", path_elements, r.URL)
+	render(w)
+}
+
+func handle_main(
+	settings base.SiteSettings,
+	path_elements map[string]string,
+	w http.ResponseWriter,
+	r *http.Request) {
+	//fmt.Printf("%v %s\n", path_elements, r.URL)
+	render(w)
+}
+
+type RequestHandler struct {
+	regex    *regexp.Regexp
+	callback RequestHandlerFunc
+}
+
+var HANDLERS = []RequestHandler{
+	{regexp.MustCompile(`^(?P<Year>\d{4})/(?P<Section>[a-z0-9\-]+)/(?P<Entry>[a-z0-9\-]+)/?$`),
+		handle_entry},
+	{regexp.MustCompile(`^(?P<Year>\d{4})/(?P<Section>[a-z0-9\-]+)/?$`), handle_section},
+	{regexp.MustCompile(`^(?P<Year>\d{4})/?$`), handle_year},
+	{regexp.MustCompile("^$"), handle_main},
+}
+
+func route_request(settings base.SiteSettings,
+	w http.ResponseWriter,
+	r *http.Request) {
+	path := r.URL.EscapedPath()
+	found := false
+	for _, handler := range HANDLERS {
+		path_regex := handler.regex
+		match := path_regex.FindStringSubmatch(path)
+		if match != nil {
+			path_elements := make(map[string]string)
+			for i, name := range handler.regex.SubexpNames() {
+				path_elements[name] = match[i]
+			}
+			handler.callback(settings, path_elements, w, r)
+			found = true
+			break
+		}
+	}
+	if !found {
+		fmt.Printf("NOTFOUND %s\n", r.URL)
+		http.NotFound(w, r)
+	}
 }
 
 func SiteRenderer(settings base.SiteSettings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render_request(settings, w, r)
+		route_request(settings, w, r)
 	}
 }
 
@@ -171,7 +207,7 @@ func render(w io.Writer) {
 		RootUrl: "http://localhost:4000",
 		Url:     "http://localhost:4000",
 	}
-	render_header(ctx, w)
+	render_page(ctx, w)
 
 	checksum := "sadf12"
 	thumbnail := base.ThumbnailedEntry{

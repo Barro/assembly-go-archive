@@ -1,0 +1,4 @@
+alias(
+    name = "assembly-archive",
+    actual = "//src:assembly-archive",
+)

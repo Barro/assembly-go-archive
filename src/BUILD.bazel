@@ -50,6 +50,7 @@ go_library(
 go_binary(
     name = "assembly-archive",
     srcs = ["main.go"],
+    visibility = ["//visibility:public"],
     deps = [
         ":api",
         ":base",
