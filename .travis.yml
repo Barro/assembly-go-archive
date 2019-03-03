@@ -1,4 +1,6 @@
-language: c
+dist: xenial
+
+language: go
 
 os:
   - linux
@@ -8,10 +10,8 @@ addons:
     packages:
       - openjdk-8-jdk
       - curl
-jdk: openjdk8
 
-compiler:
-  - gcc
+jdk: openjdk8
 
 sudo: required
 
