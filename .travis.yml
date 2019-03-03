@@ -1,0 +1,23 @@
+language: c
+
+os:
+  - linux
+
+addons:
+  apt:
+    packages:
+      - openjdk-8-jdk
+      - curl
+jdk: openjdk8
+
+compiler:
+  - gcc
+
+sudo: required
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ci/travis-before-install-linux.sh; fi
+
+install: ci/travis-install.sh
+
+script: ci/travis-ci.sh
