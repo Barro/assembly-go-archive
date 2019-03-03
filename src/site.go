@@ -17,9 +17,10 @@ type PageContext struct {
 	Url         string
 	CurrentYear int
 	SiteState   *state.SiteState
+	Navigation  *state.Navigable
 }
 
-func in_array(array []base.ThumbnailedEntry, entry base.ThumbnailedEntry) bool {
+func in_array(array []*base.ThumbnailedEntry, entry *base.ThumbnailedEntry) bool {
 	for _, array_entry := range array {
 		if array_entry.Path == entry.Path {
 			return true
@@ -30,10 +31,10 @@ func in_array(array []base.ThumbnailedEntry, entry base.ThumbnailedEntry) bool {
 
 // Randomly selects a number of entries by taking no more than 2 from
 // each section.
-func random_select_entries(year base.Year, amount int) []base.ThumbnailedEntry {
+func random_select_entries(year base.Year, amount int) []*base.ThumbnailedEntry {
 	total_sections := len(year.Sections)
 	section_indexes := rand.Perm(total_sections * 2)
-	var result []base.ThumbnailedEntry
+	var result []*base.ThumbnailedEntry
 	for _, index_value := range section_indexes {
 		if len(result) == amount {
 			break
@@ -54,12 +55,12 @@ func random_select_entries(year base.Year, amount int) []base.ThumbnailedEntry {
 // If the section is ranked, returns the top "amount" entries. If it's
 // not, returns random selection of entries. This is to promote the
 // best ranked entries where it's possible.
-func peek_section_entries(section base.Section, amount int) []base.ThumbnailedEntry {
+func peek_section_entries(section base.Section, amount int) []*base.ThumbnailedEntry {
 	if section.IsRanked {
 		return section.Entries[:amount]
 	}
 
-	var result []base.ThumbnailedEntry
+	var result []*base.ThumbnailedEntry
 	for _, index := range rand.Perm(len(section.Entries))[:amount] {
 		result = append(result, section.Entries[index])
 	}
