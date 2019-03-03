@@ -45,6 +45,8 @@ type EntryInfo struct {
 	Thumbnails    Thumbnails
 }
 
+// Structures that are used internally used to describe the site
+// contents.
 type ThumbnailedEntry struct {
 	Path       string
 	Key        string

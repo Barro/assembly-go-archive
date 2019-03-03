@@ -18,6 +18,7 @@ go_library(
     name = "base",
     srcs = ["base.go"],
     importpath = "base",
+    visibility = ["//test:__subpackages__"],
 )
 
 go_library(
@@ -31,6 +32,7 @@ go_library(
     name = "api",
     srcs = ["api.go"],
     importpath = "api",
+    visibility = ["//test:__subpackages__"],
     deps = [
         ":base",
         ":state",
@@ -41,10 +43,18 @@ go_library(
     name = "site",
     srcs = ["site.go"],
     importpath = "site",
+    visibility = ["//test:__subpackages__"],
     deps = [
         ":base",
         ":state",
     ],
+)
+
+go_library(
+    name = "server",
+    srcs = ["server.go"],
+    importpath = "server",
+    visibility = ["//test:__subpackages__"],
 )
 
 go_binary(
@@ -54,6 +64,7 @@ go_binary(
     deps = [
         ":api",
         ":base",
+        ":server",
         ":site",
     ],
 )

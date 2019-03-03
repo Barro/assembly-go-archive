@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -252,6 +253,21 @@ func read_entry_info(directory string, url_path string) (base.EntryInfo, error) 
 	return entry, nil
 }
 
+func replace_path(target string, new string, old string) error {
+	_, err_stat := os.Stat(target)
+	if err_stat == nil {
+		err_rename := os.Rename(target, old)
+		if err_rename != nil {
+			return err_rename
+		}
+	}
+	err_rename := os.Rename(new, target)
+	if err_rename != nil {
+		return err_rename
+	}
+	return nil
+}
+
 func handle_year(
 	settings base.SiteSettings,
 	year string,
@@ -277,6 +293,14 @@ func handle_year(
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
 	}
+
+	target_dir := filepath.Join(settings.DataDir, year)
+	old_dir := filepath.Join(tmpdir, "old")
+	err_replace := replace_path(target_dir, new_dir, old_dir)
+	if err_replace != nil {
+		_ise(w, err_replace)
+		return
+	}
 	w.Write([]byte("OK\n"))
 }
 
@@ -286,6 +310,25 @@ func handle_section(
 	section string,
 	w http.ResponseWriter,
 	r *http.Request) {
+	yeardir := path.Join(settings.DataDir, year)
+	{
+		err := os.MkdirAll(yeardir, 0700)
+		if err != nil {
+			_ise(w, err)
+		}
+		return
+	}
+	var tmpdir string
+	{
+		_tmpdir, err := ioutil.TempDir(yeardir, ".new-section-")
+		if err != nil {
+			_ise(w, err)
+			return
+		}
+		tmpdir = _tmpdir
+	}
+	defer os.RemoveAll(tmpdir)
+
 	fmt.Println("Section", year, section)
 }
 

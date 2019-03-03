@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+
+go_test(
+    name = "api_test",
+    srcs = ["api_test.go"],
+    deps = [
+        "//src:api",
+        "//src:base",
+        "//src:server",
+    ],
+)
