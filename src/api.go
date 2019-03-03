@@ -281,11 +281,6 @@ func handle_year(
 	}
 	defer os.RemoveAll(tmpdir)
 
-	// Make the temporary directory world readable. It doesn't matter
-	// if someone could theoretically read this, as it will be public
-	// anyways.
-	os.Chmod(tmpdir, 0755)
-
 	new_dir := filepath.Join(tmpdir, "new")
 
 	err_extract := extract_tarball(new_dir, r.Body)
@@ -311,11 +306,8 @@ func handle_section(
 	w http.ResponseWriter,
 	r *http.Request) {
 	yeardir := path.Join(settings.DataDir, year)
-	{
-		err := os.MkdirAll(yeardir, 0700)
-		if err != nil {
-			_ise(w, err)
-		}
+	if err := os.MkdirAll(yeardir, 0700); err != nil {
+		_ise(w, err)
 		return
 	}
 	var tmpdir string
@@ -329,7 +321,21 @@ func handle_section(
 	}
 	defer os.RemoveAll(tmpdir)
 
-	fmt.Println("Section", year, section)
+	new_dir := filepath.Join(tmpdir, "new")
+	err_extract := extract_tarball(new_dir, r.Body)
+	if err_extract != nil {
+		bad_request(w, "Invalid tar file: "+err_extract.Error())
+		return
+	}
+
+	target_dir := filepath.Join(yeardir, section)
+	old_dir := filepath.Join(tmpdir, "old")
+	err_replace := replace_path(target_dir, new_dir, old_dir)
+	if err_replace != nil {
+		_ise(w, err_replace)
+		return
+	}
+	w.Write([]byte("OK\n"))
 }
 
 func renderer(settings base.SiteSettings, w http.ResponseWriter, r *http.Request) {

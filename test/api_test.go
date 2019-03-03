@@ -2,7 +2,10 @@ package import_test
 
 import (
 	"api"
+	"archive/tar"
 	"base"
+	"bytes"
+	"compress/gzip"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -58,26 +61,79 @@ func require_http_success(t *testing.T, resp *http.Response) {
 	}
 }
 
+func list_files(t *testing.T, settings *base.SiteSettings) {
+	err := filepath.Walk(settings.DataDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			t.Errorf("Unable to read path %s: %s", path, err)
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		relative, err_rel := filepath.Rel(settings.DataDir, path)
+		if err_rel != nil {
+			t.Error(path)
+		} else {
+			t.Error(relative)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Errorf("Unable to walk data directory %s: %s", settings.DataDir, err)
+	}
+}
+
 func require_files(t *testing.T, settings *base.SiteSettings, files []string) {
 	for _, filename := range files {
 		_, err := os.Stat(filepath.Join(settings.DataDir, filename))
 		if err != nil {
-			t.Fatalf("Missing file: %s", err)
+			t.Errorf("Missing file %s", filename)
+			t.Error("Have following files:")
+			list_files(t, settings)
+			t.FailNow()
 		}
 	}
 }
 
-type TarFile struct {
-	path string
-	data string
+type TarEntry struct {
+	Path string
+	Data string
 }
 
-func create_tarball(t *testing.T, files []TarFile) io.Reader {
-	return nil
+func create_tarball(t *testing.T, files []TarEntry) io.Reader {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	for _, file := range files {
+		hdr := &tar.Header{
+			Name: file.Path,
+			Mode: 0600,
+			Size: int64(len(file.Data)),
+		}
+		if err := tw.WriteHeader(hdr); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write([]byte(file.Data)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	var gz_buf bytes.Buffer
+	gw := gzip.NewWriter(&gz_buf)
+	if _, err := gw.Write(buf.Bytes()); err != nil {
+		t.Fatal(err)
+	}
+	if err := gw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	return bytes.NewReader(gz_buf.Bytes())
 }
 
 func TestImport(t *testing.T) {
-	section_data := create_tarball(t, []TarFile{
+	section_data := create_tarball(t, []TarEntry{
 		{"meta.json", "{}"},
 		{"entry/meta.json", `{
 "title": "Title",
