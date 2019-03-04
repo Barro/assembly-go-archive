@@ -270,7 +270,7 @@ func replace_path(target string, new string, old string) error {
 
 func handle_year(
 	settings base.SiteSettings,
-	year string,
+	year int,
 	w http.ResponseWriter,
 	r *http.Request) {
 	fmt.Println("Year", year)
@@ -289,7 +289,7 @@ func handle_year(
 		return
 	}
 
-	target_dir := filepath.Join(settings.DataDir, year)
+	target_dir := filepath.Join(settings.DataDir, strconv.Itoa(year))
 	old_dir := filepath.Join(tmpdir, "old")
 	err_replace := replace_path(target_dir, new_dir, old_dir)
 	if err_replace != nil {
@@ -301,11 +301,11 @@ func handle_year(
 
 func handle_section(
 	settings base.SiteSettings,
-	year string,
+	year int,
 	section string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	yeardir := path.Join(settings.DataDir, year)
+	yeardir := path.Join(settings.DataDir, strconv.Itoa(year))
 	target_dir := path.Join(yeardir, section)
 	if _, err := os.Stat(target_dir); err != nil {
 		bad_request(w, "Can only update an existing section")
@@ -352,15 +352,16 @@ func renderer(settings base.SiteSettings, w http.ResponseWriter, r *http.Request
 		bad_request(w, "Can only update either a year or a section!\n")
 		return
 	}
-	year := parts[0]
-	matched_year, err_year := regexp.MatchString("^\\d{4}$", year)
+	year_str := parts[0]
+	matched_year, err_year := regexp.MatchString("^\\d{4}$", year_str)
 	if err_year != nil {
 		_ise(w, err_year)
 	}
 	if !matched_year {
-		bad_request(w, "Year '"+year+"' is not a number!")
+		bad_request(w, "Year '"+year_str+"' is not a number!")
 		return
 	}
+	year, _ := strconv.Atoi(year_str)
 	if len(parts) == 1 {
 		handle_year(settings, year, w, r)
 		return
