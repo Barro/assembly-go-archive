@@ -53,10 +53,17 @@ func do_request(t *testing.T, path string, body io.Reader) (*base.SiteSettings, 
 	return settings, resp
 }
 
-func require_http_success(t *testing.T, resp *http.Response) {
+func require_http_status(t *testing.T, resp *http.Response, status_code int) {
 	body, _ := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		t.Error("Unsuccessful status code: " + strconv.Itoa(resp.StatusCode) + "\n" + string(body))
+	if resp.StatusCode != status_code {
+		t.Error(
+			"HTTP status code " +
+				strconv.Itoa(resp.StatusCode) +
+				" (" + http.StatusText(resp.StatusCode) + ") " +
+				" is not expected " +
+				strconv.Itoa(status_code) +
+				" (" + http.StatusText(status_code) + ")" +
+				": " + string(body))
 		t.FailNow()
 	}
 }
@@ -134,17 +141,46 @@ func create_tarball(t *testing.T, files []TarEntry) io.Reader {
 
 func TestImport(t *testing.T) {
 	section_data := create_tarball(t, []TarEntry{
-		{"meta.json", "{}"},
+		{"meta.json", `{
+"name": "Name",
+"entries": ["entry"],
+}`},
 		{"entry/meta.json", `{
 "title": "Title",
 "author": "Author",
 "asset": {}
 }`},
 	})
-	settings, resp := do_request(t, "2001/section", section_data)
-	require_http_success(t, resp)
-	require_files(t, settings, []string{
-		"2001/section/meta.json",
-		"2001/section/entry/meta.json",
+	{
+		settings, resp := do_request(t, "2001/section", section_data)
+		require_http_status(t, resp, http.StatusBadRequest)
+		require_files(t, settings, []string{})
+	}
+
+	year_data := create_tarball(t, []TarEntry{
+		{"meta.json", `{
+"sections": ["section"]
+}`},
+		{"section/meta.json", `{
+"name": "Name",
+"entries": []
+}`},
 	})
+	{
+		settings, resp := do_request(t, "2001", year_data)
+		require_http_status(t, resp, http.StatusOK)
+		require_files(t, settings, []string{
+			"2001/meta.json",
+			"2001/section/meta.json",
+		})
+	}
+	{
+		settings, resp := do_request(t, "2001/section", section_data)
+		require_http_status(t, resp, http.StatusOK)
+		require_files(t, settings, []string{
+			"2001/meta.json",
+			"2001/section/meta.json",
+			"2001/section/entry/meta.json",
+		})
+	}
 }

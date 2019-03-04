@@ -306,8 +306,9 @@ func handle_section(
 	w http.ResponseWriter,
 	r *http.Request) {
 	yeardir := path.Join(settings.DataDir, year)
-	if err := os.MkdirAll(yeardir, 0700); err != nil {
-		_ise(w, err)
+	target_dir := path.Join(yeardir, section)
+	if _, err := os.Stat(target_dir); err != nil {
+		bad_request(w, "Can only update an existing section")
 		return
 	}
 	var tmpdir string
@@ -328,7 +329,6 @@ func handle_section(
 		return
 	}
 
-	target_dir := filepath.Join(yeardir, section)
 	old_dir := filepath.Join(tmpdir, "old")
 	err_replace := replace_path(target_dir, new_dir, old_dir)
 	if err_replace != nil {
