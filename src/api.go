@@ -182,25 +182,37 @@ func all_items_are_directories(root string, items []string) bool {
 	return true
 }
 
+func read_meta_bytes(directory string) ([]byte, error) {
+	meta_path := filepath.Join(directory, "meta.json")
+	if data, err_read := ioutil.ReadFile(meta_path); err_read != nil {
+		return nil, err_read
+	} else {
+		return data, nil
+	}
+}
+
 func read_year_info(directory string, url_path string) (OrderedYear, error) {
-	data, err_json := ioutil.ReadFile(filepath.Join(directory, "meta.json"))
+	data, err_data := read_meta_bytes(directory)
 	empty_year := OrderedYear{}
-	if err_json != nil {
-		return empty_year, err_json
+	if err_data != nil {
+		return empty_year, err_data
 	}
 
-	var keys []string
-	err_unmarshal := json.Unmarshal(data, &keys)
+	type YearMeta struct {
+		sections []string
+	}
+	var year_meta YearMeta
+	err_unmarshal := json.Unmarshal(data, &year_meta)
 	if err_unmarshal != nil {
 		return empty_year, err_unmarshal
 	}
-	if !all_items_are_directories(directory, keys) {
+	if !all_items_are_directories(directory, year_meta.sections) {
 		return empty_year, &InputError{"Not all sections for year '" + url_path + "' are valid!"}
 	}
 
 	return OrderedYear{
 		Path:        url_path,
-		SectionKeys: keys,
+		SectionKeys: year_meta.sections,
 	}, nil
 }
 
@@ -211,13 +223,33 @@ type OrderedSection struct {
 }
 
 func read_section_info(directory string, url_path string) (OrderedSection, error) {
-	return OrderedSection{}, nil
+	section := OrderedSection{}
+	data, err_data := read_meta_bytes(directory)
+	if err_data != nil {
+		return section, err_data
+	}
+
+	type SectionData struct {
+		name        string
+		description string
+		entries     []string
+	}
+	var meta_section SectionData
+	err_unmarshal := json.Unmarshal(data, &meta_section)
+	if err_unmarshal != nil {
+		return section, err_unmarshal
+	}
+	return section, nil
 }
 
 func read_entry_info(directory string, url_path string) (base.EntryInfo, error) {
-	data, err := ioutil.ReadFile(filepath.Join(directory, "meta.json"))
 	key := filepath.Base(directory)
 	entry := base.EntryInfo{Path: url_path, Key: key}
+
+	data, err_read := read_meta_bytes(directory)
+	if err_read != nil {
+		return entry, err_read
+	}
 	var meta_json_raw interface{}
 	err_unmarshal := json.Unmarshal(data, &meta_json_raw)
 	if err_unmarshal != nil {
@@ -244,10 +276,11 @@ func read_entry_info(directory string, url_path string) (base.EntryInfo, error) 
 			resolution,
 			value["type"]}, nil
 	}
-	entry.Thumbnails.Default, err = _json_to_thumbnail(
+	var err_thumbnails error
+	entry.Thumbnails.Default, err_thumbnails = _json_to_thumbnail(
 		meta_root["thumbnail"].(map[string]string))
-	if err != nil {
-		return entry, err
+	if err_thumbnails != nil {
+		return entry, err_thumbnails
 	}
 
 	return entry, nil
@@ -288,7 +321,8 @@ func handle_year(
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
 	}
-	if err := validate_year_dir(new_dir); err != nil {
+	url_path := string(year)
+	if err := validate_year_dir(new_dir, url_path); err != nil {
 		bad_request(w, "Invalid year data: "+err.Error())
 	}
 
@@ -302,16 +336,27 @@ func handle_year(
 	w.Write([]byte("OK\n"))
 }
 
-func validate_year_dir(dir string) error {
-	url_path := "year"
-	_, err := read_year_info(dir, url_path)
-	return err
+func validate_year_dir(dir string, url_path string) error {
+	year_info, err_year := read_year_info(dir, url_path)
+	if err_year != nil {
+		return err_year
+	}
+	for _, section := range year_info.SectionKeys {
+		section_dir := filepath.Join(dir, section)
+		section_path := url_path + "/" + section
+		if err := validate_section_dir(section_dir, section_path); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func validate_section_dir(dir string) error {
-	url_path := "year/section"
+func validate_section_dir(dir string, url_path string) error {
 	_, err := read_section_info(dir, url_path)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func handle_section(
@@ -320,6 +365,7 @@ func handle_section(
 	section string,
 	w http.ResponseWriter,
 	r *http.Request) {
+	url_path := string(year) + "/" + section
 	yeardir := path.Join(settings.DataDir, strconv.Itoa(year))
 	target_dir := path.Join(yeardir, section)
 	if _, err := os.Stat(target_dir); err != nil {
@@ -343,7 +389,7 @@ func handle_section(
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
 	}
-	if err := validate_section_dir(new_dir); err != nil {
+	if err := validate_section_dir(new_dir, url_path); err != nil {
 		bad_request(w, "Invalid section data: "+err.Error())
 	}
 

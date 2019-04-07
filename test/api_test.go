@@ -19,9 +19,6 @@ import (
 
 func create_site_layout(t *testing.T) *base.SiteSettings {
 	data_dir := filepath.Join(t.Name(), "data")
-	if err := os.RemoveAll(data_dir); err != nil {
-		t.Fatal(err)
-	}
 	if err := os.MkdirAll(data_dir, 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +149,7 @@ func TestMain(m *testing.M) {
 	SECTION_WITH_ENTRY = []TarEntry{
 		{"meta.json", `{
 "name": "Name",
-"entries": ["entry"],
+"entries": ["entry"]
 }`},
 		{"entry/meta.json", `{
 "title": "Title",
@@ -163,7 +160,15 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func setup(t *testing.T) {
+	data_dir := filepath.Join(t.Name(), "data")
+	if err := os.RemoveAll(data_dir); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestValidSectionWithoutYearShouldResultInBadRequest(t *testing.T) {
+	setup(t)
 	section_data := create_tarball(t, SECTION_WITH_ENTRY)
 	settings, resp := do_request(t, "2001/section", section_data)
 	require_http_status(t, resp, http.StatusBadRequest)
@@ -171,6 +176,7 @@ func TestValidSectionWithoutYearShouldResultInBadRequest(t *testing.T) {
 }
 
 func TestValidYearWithSectionShouldResultInStatusOk(t *testing.T) {
+	setup(t)
 	year_data := create_tarball(t, YEAR_WITH_SECTION)
 	settings, resp := do_request(t, "2001", year_data)
 	require_http_status(t, resp, http.StatusOK)
@@ -181,6 +187,7 @@ func TestValidYearWithSectionShouldResultInStatusOk(t *testing.T) {
 }
 
 func TestIndividualSectionUpdateShouldBeVisible(t *testing.T) {
+	setup(t)
 	year_data := create_tarball(t, YEAR_WITH_SECTION)
 	{
 		_, resp := do_request(t, "2001", year_data)
