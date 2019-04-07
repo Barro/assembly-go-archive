@@ -288,6 +288,9 @@ func handle_year(
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
 	}
+	if err := validate_year_dir(new_dir); err != nil {
+		bad_request(w, "Invalid year data: "+err.Error())
+	}
 
 	target_dir := filepath.Join(settings.DataDir, strconv.Itoa(year))
 	old_dir := filepath.Join(tmpdir, "old")
@@ -297,6 +300,18 @@ func handle_year(
 		return
 	}
 	w.Write([]byte("OK\n"))
+}
+
+func validate_year_dir(dir string) error {
+	url_path := "year"
+	_, err := read_year_info(dir, url_path)
+	return err
+}
+
+func validate_section_dir(dir string) error {
+	url_path := "year/section"
+	_, err := read_section_info(dir, url_path)
+	return err
 }
 
 func handle_section(
@@ -327,6 +342,9 @@ func handle_section(
 	if err_extract != nil {
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
+	}
+	if err := validate_section_dir(new_dir); err != nil {
+		bad_request(w, "Invalid section data: "+err.Error())
 	}
 
 	old_dir := filepath.Join(tmpdir, "old")

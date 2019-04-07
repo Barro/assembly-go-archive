@@ -19,18 +19,15 @@ import (
 
 func create_site_layout(t *testing.T) *base.SiteSettings {
 	data_dir := filepath.Join(t.Name(), "data")
-	{
-		err := os.MkdirAll(data_dir, 0700)
-		if err != nil {
-			t.Fatal(err)
-		}
+	if err := os.RemoveAll(data_dir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(data_dir, 0700); err != nil {
+		t.Fatal(err)
 	}
 	unreadable_dir := filepath.Join(t.Name(), "unreadable")
-	{
-		err := os.MkdirAll(unreadable_dir, 0000)
-		if err != nil {
-			t.Fatal(err)
-		}
+	if err := os.MkdirAll(unreadable_dir, 0000); err != nil {
+		t.Fatal(err)
 	}
 
 	settings := base.SiteSettings{
@@ -59,7 +56,7 @@ func require_http_status(t *testing.T, resp *http.Response, status_code int) {
 		t.Error(
 			"HTTP status code " +
 				strconv.Itoa(resp.StatusCode) +
-				" (" + http.StatusText(resp.StatusCode) + ") " +
+				" (" + http.StatusText(resp.StatusCode) + ")" +
 				" is not expected " +
 				strconv.Itoa(status_code) +
 				" (" + http.StatusText(status_code) + ")" +
@@ -139,8 +136,20 @@ func create_tarball(t *testing.T, files []TarEntry) io.Reader {
 	return bytes.NewReader(gz_buf.Bytes())
 }
 
-func TestImport(t *testing.T) {
-	section_data := create_tarball(t, []TarEntry{
+var YEAR_WITH_SECTION []TarEntry
+var SECTION_WITH_ENTRY []TarEntry
+
+func TestMain(m *testing.M) {
+	YEAR_WITH_SECTION = []TarEntry{
+		{"meta.json", `{
+"sections": ["section"]
+}`},
+		{"section/meta.json", `{
+"name": "Name",
+"entries": []
+}`},
+	}
+	SECTION_WITH_ENTRY = []TarEntry{
 		{"meta.json", `{
 "name": "Name",
 "entries": ["entry"],
@@ -150,37 +159,40 @@ func TestImport(t *testing.T) {
 "author": "Author",
 "asset": {}
 }`},
+	}
+	os.Exit(m.Run())
+}
+
+func TestValidSectionWithoutYearShouldResultInBadRequest(t *testing.T) {
+	section_data := create_tarball(t, SECTION_WITH_ENTRY)
+	settings, resp := do_request(t, "2001/section", section_data)
+	require_http_status(t, resp, http.StatusBadRequest)
+	require_files(t, settings, []string{})
+}
+
+func TestValidYearWithSectionShouldResultInStatusOk(t *testing.T) {
+	year_data := create_tarball(t, YEAR_WITH_SECTION)
+	settings, resp := do_request(t, "2001", year_data)
+	require_http_status(t, resp, http.StatusOK)
+	require_files(t, settings, []string{
+		"2001/meta.json",
+		"2001/section/meta.json",
 	})
+}
+
+func TestIndividualSectionUpdateShouldBeVisible(t *testing.T) {
+	year_data := create_tarball(t, YEAR_WITH_SECTION)
 	{
-		settings, resp := do_request(t, "2001/section", section_data)
-		require_http_status(t, resp, http.StatusBadRequest)
-		require_files(t, settings, []string{})
+		_, resp := do_request(t, "2001", year_data)
+		require_http_status(t, resp, http.StatusOK)
 	}
 
-	year_data := create_tarball(t, []TarEntry{
-		{"meta.json", `{
-"sections": ["section"]
-}`},
-		{"section/meta.json", `{
-"name": "Name",
-"entries": []
-}`},
+	section_data := create_tarball(t, SECTION_WITH_ENTRY)
+	settings, resp := do_request(t, "2001/section", section_data)
+	require_http_status(t, resp, http.StatusOK)
+	require_files(t, settings, []string{
+		"2001/meta.json",
+		"2001/section/meta.json",
+		"2001/section/entry/meta.json",
 	})
-	{
-		settings, resp := do_request(t, "2001", year_data)
-		require_http_status(t, resp, http.StatusOK)
-		require_files(t, settings, []string{
-			"2001/meta.json",
-			"2001/section/meta.json",
-		})
-	}
-	{
-		settings, resp := do_request(t, "2001/section", section_data)
-		require_http_status(t, resp, http.StatusOK)
-		require_files(t, settings, []string{
-			"2001/meta.json",
-			"2001/section/meta.json",
-			"2001/section/entry/meta.json",
-		})
-	}
 }
