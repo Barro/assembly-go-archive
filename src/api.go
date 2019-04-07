@@ -20,6 +20,11 @@ import (
 	"strings"
 )
 
+// 128 kilobytes is able to hold 2000 entries with 50 bytes/entry +
+// some extra. We should never be even close to this metadata size for
+// any year, section, or entry.
+var MAX_METADATA_SIZE int64 = 128 * 1024
+
 type ExtractError struct {
 	message string
 }
@@ -104,20 +109,20 @@ func extract_tar_entry(target string, tar_reader *tar.Reader, header *tar.Header
 		}
 	case tar.TypeReg:
 		parent_directory := filepath.Dir(target)
-		err_mkdir := os.MkdirAll(parent_directory, 0755)
-		if err_mkdir != nil {
-			return &ExtractError{"Failed to create parent directory for '" + target + "': " + err_mkdir.Error()}
+		if err := os.MkdirAll(parent_directory, 0755); err != nil {
+			return &ExtractError{"Failed to create parent directory for '" + target + "': " + err.Error()}
 		}
 
 		out_file, err_create := os.Create(target)
 		if err_create != nil {
 			return &ExtractError{"Failed to create file to '" + target + ": " + err_create.Error()}
 		}
-		_, err_copy := io.Copy(out_file, tar_reader)
-		if err_copy != nil {
-			return &ExtractError{"Failed to extract file '" + target + "': " + err_copy.Error()}
+		if _, err := io.Copy(out_file, tar_reader); err != nil {
+			return &ExtractError{"Failed to extract file '" + target + "': " + err.Error()}
 		}
-		out_file.Close()
+		if err := out_file.Close(); err != nil {
+			return &ExtractError{"Unable to finish extraction of file '" + target + "': " + err.Error()}
+		}
 	default:
 		return &ExtractError{"Unsupported file type for '" + target + "': " + string(int(header.Typeflag))}
 	}
@@ -184,6 +189,18 @@ func all_items_are_directories(root string, items []string) bool {
 
 func read_meta_bytes(directory string) ([]byte, error) {
 	meta_path := filepath.Join(directory, "meta.json")
+	stats, err_stat := os.Stat(meta_path)
+	if err_stat != nil {
+		return nil, err_stat
+	}
+	if stats.Size() > MAX_METADATA_SIZE {
+		return nil, &InputError{
+			"meta.json size of " +
+				strconv.FormatInt(stats.Size(), 10) +
+				" bytes exceeds the maximum of " +
+				strconv.FormatInt(MAX_METADATA_SIZE, 10) +
+				" bytes!"}
+	}
 	if data, err_read := ioutil.ReadFile(meta_path); err_read != nil {
 		return nil, err_read
 	} else {
@@ -199,46 +216,51 @@ func read_year_info(directory string, url_path string) (OrderedYear, error) {
 	}
 
 	type YearMeta struct {
-		sections []string
+		Sections []string
 	}
 	var year_meta YearMeta
 	err_unmarshal := json.Unmarshal(data, &year_meta)
 	if err_unmarshal != nil {
 		return empty_year, err_unmarshal
 	}
-	if !all_items_are_directories(directory, year_meta.sections) {
+	if !all_items_are_directories(directory, year_meta.Sections) {
 		return empty_year, &InputError{"Not all sections for year '" + url_path + "' are valid!"}
 	}
 
 	return OrderedYear{
 		Path:        url_path,
-		SectionKeys: year_meta.sections,
+		SectionKeys: year_meta.Sections,
 	}, nil
 }
 
 type OrderedSection struct {
 	Path        string
+	Name        string
 	Description string
 	EntryKeys   []string
 }
 
 func read_section_info(directory string, url_path string) (OrderedSection, error) {
 	section := OrderedSection{}
+	section.Path = url_path
 	data, err_data := read_meta_bytes(directory)
 	if err_data != nil {
 		return section, err_data
 	}
 
 	type SectionData struct {
-		name        string
-		description string
-		entries     []string
+		Name        string
+		Description string `json:""`
+		Entries     []string
 	}
 	var meta_section SectionData
 	err_unmarshal := json.Unmarshal(data, &meta_section)
 	if err_unmarshal != nil {
 		return section, err_unmarshal
 	}
+	section.Name = meta_section.Name
+	section.Description = meta_section.Description
+	section.EntryKeys = meta_section.Entries
 	return section, nil
 }
 
@@ -250,16 +272,26 @@ func read_entry_info(directory string, url_path string) (base.EntryInfo, error) 
 	if err_read != nil {
 		return entry, err_read
 	}
-	var meta_json_raw interface{}
-	err_unmarshal := json.Unmarshal(data, &meta_json_raw)
+
+	type EntryMeta struct {
+		Title          string
+		Author         string                      `json:""`
+		Asset          string                      `json:"-"`
+		Description    string                      `json:""`
+		External_links []base.ExternalLinksSection `json:[]`
+		Thumbnails     map[string]string           `json:{}`
+	}
+	var meta_entry EntryMeta
+	err_unmarshal := json.Unmarshal(data, &meta_entry)
 	if err_unmarshal != nil {
 		return entry, err_unmarshal
 	}
 
-	meta_root := meta_json_raw.(map[string]interface{})
-	entry.Title = meta_root["title"].(string)
-	entry.Author = meta_root["author"].(string)
-	entry.Asset = meta_root["asset"].(string)
+	entry.Title = meta_entry.Title
+	entry.Author = meta_entry.Author
+	entry.Asset = meta_entry.Asset
+	entry.Description = meta_entry.Description
+	fmt.Println(meta_entry)
 
 	_json_to_thumbnail := func(value map[string]string) (base.ThumbnailInfo, error) {
 		checksum, err := create_file_checksum(filepath.Join(directory, value["path"]))
@@ -277,8 +309,7 @@ func read_entry_info(directory string, url_path string) (base.EntryInfo, error) 
 			value["type"]}, nil
 	}
 	var err_thumbnails error
-	entry.Thumbnails.Default, err_thumbnails = _json_to_thumbnail(
-		meta_root["thumbnail"].(map[string]string))
+	entry.Thumbnails.Default, err_thumbnails = _json_to_thumbnail(meta_entry.Thumbnails)
 	if err_thumbnails != nil {
 		return entry, err_thumbnails
 	}
@@ -321,7 +352,7 @@ func handle_year(
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
 	}
-	url_path := string(year)
+	url_path := strconv.Itoa(year)
 	if err := validate_year_dir(new_dir, url_path); err != nil {
 		bad_request(w, "Invalid year data: "+err.Error())
 	}
@@ -341,6 +372,7 @@ func validate_year_dir(dir string, url_path string) error {
 	if err_year != nil {
 		return err_year
 	}
+	fmt.Println(year_info.SectionKeys)
 	for _, section := range year_info.SectionKeys {
 		section_dir := filepath.Join(dir, section)
 		section_path := url_path + "/" + section
@@ -351,12 +383,55 @@ func validate_year_dir(dir string, url_path string) error {
 	return nil
 }
 
-func validate_section_dir(dir string, url_path string) error {
-	_, err := read_section_info(dir, url_path)
+func directory_subdirs_match_known(dir string, known []string) error {
+	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
 	}
+	keys := make(map[string]bool)
+	for _, key := range known {
+		keys[key] = true
+	}
+	for _, fileinfo := range files {
+		if !fileinfo.IsDir() {
+			continue
+		}
+		if _, ok := keys[fileinfo.Name()]; !ok {
+			return &InputError{
+				"Directory '" +
+					fileinfo.Name() +
+					"' is not part of known directories list of " +
+					strconv.Itoa(len(known)) +
+					"items : " +
+					strings.Join(known, ", ")}
+		}
+	}
 	return nil
+}
+
+func validate_section_dir(dir string, url_path string) error {
+	section, err := read_section_info(dir, url_path)
+	if err != nil {
+		return err
+	}
+
+	if err := directory_subdirs_match_known(
+		dir, section.EntryKeys); err != nil {
+		return err
+	}
+	for _, entry_key := range section.EntryKeys {
+		entry_dir := filepath.Join(dir, entry_key)
+		entry_path := url_path + "/" + entry_key
+		if err := validate_entry_dir(entry_dir, entry_path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validate_entry_dir(dir string, url_path string) error {
+	_, err := read_entry_info(dir, url_path)
+	return err
 }
 
 func handle_section(
@@ -365,7 +440,7 @@ func handle_section(
 	section string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	url_path := string(year) + "/" + section
+	url_path := strconv.Itoa(year) + "/" + section
 	yeardir := path.Join(settings.DataDir, strconv.Itoa(year))
 	target_dir := path.Join(yeardir, section)
 	if _, err := os.Stat(target_dir); err != nil {
