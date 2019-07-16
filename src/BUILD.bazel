@@ -46,6 +46,7 @@ go_library(
     visibility = ["//test:__subpackages__"],
     deps = [
         ":base",
+        ":server",
         ":state",
     ],
 )

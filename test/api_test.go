@@ -153,8 +153,7 @@ func TestMain(m *testing.M) {
 }`},
 		{"entry/meta.json", `{
 "title": "Title",
-"author": "Author",
-"asset": {}
+"author": "Author"
 }`},
 	}
 	os.Exit(m.Run())

@@ -2,13 +2,18 @@ package site
 
 import (
 	"base"
+	"bufio"
 	"fmt"
-	"html/template"
+	"html"
 	"io"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"regexp"
+	"server"
 	"state"
+	"text/template"
 )
 
 type PageContext struct {
@@ -18,6 +23,11 @@ type PageContext struct {
 	CurrentYear int
 	SiteState   *state.SiteState
 	Navigation  *state.Navigable
+}
+
+type SectionThumbnails struct {
+	Settings *base.SiteSettings
+	Entries  []*base.EntryInfo
 }
 
 func in_array(array []*base.ThumbnailedEntry, entry *base.ThumbnailedEntry) bool {
@@ -117,6 +127,97 @@ func render_thumbnail(wr io.Writer, thumbnail base.ThumbnailedEntry) {
 	t.Execute(wr, thumbnail)
 }
 
+func view_author_title(entry base.EntryInfo) string {
+	var author_title string
+	if entry.Author == "" {
+		author_title = entry.Title
+	} else {
+		author_title = entry.Title + " by " + entry.Author
+	}
+	return html.EscapeString(author_title)
+}
+
+type GalleryRenderer struct {
+	Settings *base.SiteSettings
+	Template *template.Template
+}
+
+func NewGalleryRenderer(settings *base.SiteSettings) (*GalleryRenderer, error) {
+	ti := template.New("templates/gallery.html.tmpl")
+	functions := template.FuncMap{}
+	functions["view_author_title"] = view_author_title
+	ti = ti.Funcs(functions)
+	template_data, data_err := ioutil.ReadFile("templates/gallery.html.tmpl")
+	if data_err != nil {
+		return nil, data_err
+	}
+	t, template_err := ti.Parse(string(template_data))
+	if template_err != nil {
+		return nil, template_err
+	}
+	renderer := GalleryRenderer{
+		Settings: settings,
+		Template: t,
+	}
+	return &renderer, nil
+}
+
+func (r *GalleryRenderer) Render(w http.ResponseWriter, entries []*base.EntryInfo) error {
+	ctx := SectionThumbnails{
+		Settings: r.Settings,
+		Entries:  entries,
+	}
+	wr := bufio.NewWriterSize(w, 1024*64)
+	err := r.Template.Execute(wr, ctx)
+	if err != nil {
+		server.Ise(w)
+		return err
+	} else {
+		wr.Flush()
+	}
+	return nil
+}
+
+func render_gallery(w http.ResponseWriter, settings base.SiteSettings) {
+	renderer, err_renderer := NewGalleryRenderer(&settings)
+	if err_renderer != nil {
+		server.Ise(w)
+		log.Print(err_renderer)
+		return
+	}
+	entry1 := base.EntryInfo{
+		Path:          "path",
+		Key:           "key",
+		Title:         "title",
+		Author:        "author",
+		Asset:         "asset",
+		Description:   "description",
+		ExternalLinks: []base.ExternalLinksSection{},
+		Thumbnails: base.Thumbnails{
+			Default: base.ThumbnailInfo{
+				Path:     "/absolute/path",
+				Checksum: nil,
+				Size: base.Resolution{
+					X: 160,
+					Y: 90,
+				},
+				Type: "image/png",
+			},
+			Extra: []base.TypedThumbnails{},
+		},
+	}
+	entries := make([]*base.EntryInfo, 5)
+	for i := 0; i < len(entries); i++ {
+		entries[i] = &entry1
+	}
+	for i := 0; i < 15; i++ {
+		if err := renderer.Render(w, entries); err != nil {
+			log.Print(err)
+			break
+		}
+	}
+}
+
 type RequestHandlerFunc func(
 	settings base.SiteSettings,
 	path_elements map[string]string,
@@ -129,7 +230,7 @@ func handle_entry(
 	w http.ResponseWriter,
 	r *http.Request) {
 	//fmt.Printf("%v %s\n", path_elements, r.URL)
-	render(w)
+	render(w, settings)
 }
 
 func handle_section(
@@ -138,7 +239,7 @@ func handle_section(
 	w http.ResponseWriter,
 	r *http.Request) {
 	//fmt.Printf("%v %s\n", path_elements, r.URL)
-	render(w)
+	render(w, settings)
 }
 
 func handle_year(
@@ -146,8 +247,8 @@ func handle_year(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	//fmt.Printf("%v %s\n", path_elements, r.URL)
-	render(w)
+	// fmt.Printf("year %v %s\n", path_elements, r.URL)
+	render(w, settings)
 }
 
 func handle_main(
@@ -155,8 +256,8 @@ func handle_main(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	//fmt.Printf("%v %s\n", path_elements, r.URL)
-	render(w)
+	// fmt.Printf("main %v %s\n", path_elements, r.URL)
+	render(w, settings)
 }
 
 type RequestHandler struct {
@@ -202,31 +303,34 @@ func SiteRenderer(settings base.SiteSettings) http.HandlerFunc {
 	}
 }
 
-func render(w io.Writer) {
-	ctx := PageContext{
-		Title:   "",
-		RootUrl: "http://localhost:4000",
-		Url:     "http://localhost:4000",
-	}
-	render_page(ctx, w)
+func render(w http.ResponseWriter, settings base.SiteSettings) {
+	/*
+		ctx := PageContext{
+			Title:   "",
+			RootUrl: "http://localhost:4000",
+			Url:     "http://localhost:4000",
+		}
+		render_page(ctx, w)
 
-	checksum := "sadf12"
-	thumbnail := base.ThumbnailedEntry{
-		Path:   "/section/otsikko-by-autori",
-		Key:    "otsikko-by-autori",
-		Title:  "otsikko",
-		Author: "autori",
-		Thumbnails: base.Thumbnails{
-			Default: base.ThumbnailInfo{
-				Path:     "/section/otsikko-by-autori/thumbnail.png",
-				Checksum: &checksum,
-				Size:     base.Resolution{10, 10},
-				Type:     "image/png",
+		checksum := "sadf12"
+		thumbnail := base.ThumbnailedEntry{
+			Path:   "/section/otsikko-by-autori",
+			Key:    "otsikko-by-autori",
+			Title:  "otsikko",
+			Author: "autori",
+			Thumbnails: base.Thumbnails{
+				Default: base.ThumbnailInfo{
+					Path:     "/section/otsikko-by-autori/thumbnail.png",
+					Checksum: &checksum,
+					Size:     base.Resolution{10, 10},
+					Type:     "image/png",
+				},
+				Extra: []base.TypedThumbnails{},
 			},
-			Extra: []base.TypedThumbnails{},
-		},
-	}
+		}
 
-	// }
-	render_thumbnail(w, thumbnail)
+		// }
+		render_thumbnail(w, thumbnail)
+	*/
+	render_gallery(w, settings)
 }

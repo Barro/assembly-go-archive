@@ -1,0 +1,23 @@
+{{range $index, $element := .Entries}}
+<div class="video overview-thumbnail-{{$index}}">
+  <a class="thumbnail" href="{{.Path|html}}">
+    {{/* TODO näytä useita thumbnail-vaihtoehtoja? */}}
+    {{$thumbnail := .Thumbnails.Default}}
+    <picture>
+      <img class="thumbnail-image"
+           src="{{$thumbnail.Path|html}}"
+           alt="{{.|view_author_title}}"
+           title="{{.|view_author_title}}"
+           width="{{$thumbnail.Size.X}}"
+           height="{{$thumbnail.Size.Y}}"
+           />
+    </picture>
+    {{.Title|html}}
+    {{if .Author}}
+    <span class="by">{{.Author|html}}</span>
+    {{end}}
+    </a>
+</div>
+{{else}}
+Help! We have nothing in here!
+{{end}}

@@ -71,7 +71,7 @@ func has_username_password(users AuthData, username, password string) bool {
 	return true
 }
 
-func _ise(w http.ResponseWriter) {
+func Ise(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte("Internal server error!\n"))
 }
@@ -95,7 +95,7 @@ func BasicAuth(auth_filename string, handler http.HandlerFunc) http.HandlerFunc 
 		}
 		users, err := read_auth_data(auth_filename)
 		if err != nil {
-			_ise(w)
+			Ise(w)
 			log.Print(err)
 			return
 		}

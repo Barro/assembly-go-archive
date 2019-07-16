@@ -275,11 +275,11 @@ func read_entry_info(directory string, url_path string) (base.EntryInfo, error) 
 
 	type EntryMeta struct {
 		Title          string
-		Author         string                      `json:""`
-		Asset          string                      `json:"-"`
-		Description    string                      `json:""`
-		External_links []base.ExternalLinksSection `json:[]`
-		Thumbnails     map[string]string           `json:{}`
+		Author         string
+		Asset          string
+		Description    string
+		External_links []base.ExternalLinksSection
+		Thumbnails     map[string]string
 	}
 	var meta_entry EntryMeta
 	err_unmarshal := json.Unmarshal(data, &meta_entry)
@@ -298,7 +298,12 @@ func read_entry_info(directory string, url_path string) (base.EntryInfo, error) 
 		if err != nil {
 			return base.ThumbnailInfo{}, err
 		}
-		resolution, err_res := string_to_resolution(value["resolution"])
+		resolution_str, ok := value["resolution"]
+		if !ok {
+			return base.ThumbnailInfo{}, &InputError{
+				"No resolution specified for thumbnail!"}
+		}
+		resolution, err_res := string_to_resolution(resolution_str)
 		if err_res != nil {
 			return base.ThumbnailInfo{}, err_res
 		}
@@ -308,6 +313,7 @@ func read_entry_info(directory string, url_path string) (base.EntryInfo, error) 
 			resolution,
 			value["type"]}, nil
 	}
+	fmt.Println(meta_entry.Thumbnails)
 	var err_thumbnails error
 	entry.Thumbnails.Default, err_thumbnails = _json_to_thumbnail(meta_entry.Thumbnails)
 	if err_thumbnails != nil {
