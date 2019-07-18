@@ -173,7 +173,7 @@ func (r *GalleryRenderer) Render(w http.ResponseWriter, entries []*base.EntryInf
 		server.Ise(w)
 		return err
 	} else {
-		wr.Flush()
+		return wr.Flush()
 	}
 	return nil
 }
@@ -210,7 +210,7 @@ func render_gallery(w http.ResponseWriter, settings base.SiteSettings) {
 	for i := 0; i < len(entries); i++ {
 		entries[i] = &entry1
 	}
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 25; i++ {
 		if err := renderer.Render(w, entries); err != nil {
 			log.Print(err)
 			break

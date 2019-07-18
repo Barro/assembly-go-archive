@@ -1,3 +1,4 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load(":static.bzl", "yui_minified", "zopflipng_minified")
 
 yui_minified(
@@ -25,5 +26,21 @@ yui_minified(
 zopflipng_minified(
     name = "images-min",
     srcs = glob(["images/*.png"]),
-    tags = ["manual"],
+)
+
+pkg_tar(
+    name = "images-min-pkg",
+    srcs = [":images-min"],
+    strip_prefix = "/static/images-min/static/",
+)
+
+pkg_tar(
+    name = "static",
+    srcs = [
+        ":allscripts-min.js",
+        ":allstyles-min.css",
+    ],
+    package_dir = "static",
+    visibility = ["//visibility:public"],
+    deps = [":images-min-pkg"],
 )

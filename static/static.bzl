@@ -4,17 +4,19 @@ def _yui_minified_impl(ctx):
     minify_args.add("-jar")
     minify_args.add_all(ctx.attr._yuicompressor.files)
     minify_args.add("-o")
-    outfiles = depset()
+    outfiles = []
     for infile in ctx.files.srcs:
         outfile = ctx.actions.declare_file(
-            "_min/%s" % infile.short_path)
+            "_min/%s" % infile.short_path,
+        )
         ctx.actions.run(
             outputs = [outfile],
             inputs = [infile],
             tools = tools,
             executable = "java",
-            arguments = [minify_args, outfile.path, infile.path])
-        outfiles += [outfile]
+            arguments = [minify_args, outfile.path, infile.path],
+        )
+        outfiles.append(outfile)
 
     outfiles_args = ctx.actions.args()
     outfiles_args.add_all(outfiles)
@@ -25,40 +27,40 @@ def _yui_minified_impl(ctx):
         arguments = [output.path, outfiles_args],
         command = "out=$1; shift; cat \"$@\" > \"$out\"",
     )
-    return [DefaultInfo(files=depset([output]))]
-
+    return [DefaultInfo(files = depset([output]))]
 
 yui_minified = rule(
-    implementation = _yui_minified_impl,
     attrs = {
         "srcs": attr.label_list(
             allow_files = True,
         ),
         "_yuicompressor": attr.label(
-            default = Label("@yuicompressor//file")
+            default = Label("@yuicompressor//file"),
         ),
     },
+    implementation = _yui_minified_impl,
 )
 
 def _zopflipng_minified_impl(ctx):
-    outfiles = depset()
+    outfiles = []
     for infile in ctx.files.srcs:
         outfile = ctx.actions.declare_file(
-            "%s/%s" % (ctx.label.name, infile.short_path))
+            "%s/%s" % (ctx.label.name, infile.short_path),
+        )
         ctx.actions.run(
             outputs = [outfile],
             inputs = [infile],
             executable = "zopflipng",
-            arguments = ["-m", "-y", infile.path, outfile.path])
-        outfiles += [outfile]
-    return [DefaultInfo(files=outfiles)]
-
+            arguments = ["-m", "-y", infile.path, outfile.path],
+        )
+        outfiles.append(outfile)
+    return [DefaultInfo(files = depset(outfiles))]
 
 zopflipng_minified = rule(
-    implementation = _zopflipng_minified_impl,
     attrs = {
         "srcs": attr.label_list(
-            allow_files = True
+            allow_files = True,
         ),
     },
+    implementation = _zopflipng_minified_impl,
 )

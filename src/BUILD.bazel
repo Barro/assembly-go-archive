@@ -1,18 +1,5 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-
-# go_library(
-#     name = "go_default_library",
-#     srcs = [
-#         "foo.go",
-#         "bar.go",
-#     ],
-#     deps = [
-#         "//tools:go_default_library",
-#         "@org_golang_x_utils//stuff:go_default_library",
-#     ],
-#     importpath = "github.com/example/project/foo",
-#     visibility = ["//visibility:public"],
-# )
 
 go_library(
     name = "base",
@@ -68,4 +55,11 @@ go_binary(
         ":server",
         ":site",
     ],
+)
+
+pkg_tar(
+    name = "assembly-archive-pkg",
+    srcs = [":assembly-archive"],
+    mode = "0755",
+    visibility = ["//visibility:public"],
 )

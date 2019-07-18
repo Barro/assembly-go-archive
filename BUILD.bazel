@@ -1,4 +1,20 @@
-alias(
-    name = "assembly-archive",
-    actual = "//src:assembly-archive",
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+genrule(
+    name = "assembly-archive-alias",
+    srcs = ["//src:assembly-archive"],
+    outs = ["assembly-archive"],
+    cmd = """
+ln -sf $(rootpath //src:assembly-archive) $@
+""",
+)
+
+pkg_tar(
+    name = "assembly-archive-pkg",
+    package_dir = "assembly-archive",
+    deps = [
+        "//src:assembly-archive-pkg",
+        "//static",
+        "//templates",
+    ],
 )
