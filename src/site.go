@@ -353,53 +353,6 @@ func SiteRenderer(settings base.SiteSettings, state *state.SiteState) http.Handl
 		Templates: nil,
 	}
 
-	entry := base.EntryInfo{
-		Path:          "/2018/section/entry/",
-		Key:           "key",
-		Title:         "title",
-		Author:        "author",
-		Asset:         "asset",
-		Description:   "description",
-		ExternalLinks: []base.ExternalLinksSection{},
-		Thumbnails: base.Thumbnails{
-			Default: base.ThumbnailInfo{
-				Path:     "/absolute/path",
-				Checksum: nil,
-				Size: base.Resolution{
-					X: 160,
-					Y: 90,
-				},
-				Type: "image/png",
-			},
-			Extra: []base.TypedThumbnails{},
-		},
-	}
-	section_ranked := base.Section{
-		Path:        "/2018/section-ranked/",
-		Key:         "section-ranked",
-		Name:        "Section ranked",
-		Description: "Here is a decent ranked description!",
-		IsRanked:    true,
-		Entries:     []*base.EntryInfo{&entry, &entry, &entry, &entry, &entry, &entry},
-	}
-	section_unranked := base.Section{
-		Path:        "/2018/section-unranked/",
-		Key:         "section-unranked",
-		Name:        "Section unranked",
-		Description: "Here is a decent unranked description!",
-		IsRanked:    false,
-		Entries:     []*base.EntryInfo{&entry, &entry, &entry, &entry, &entry, &entry},
-	}
-	year := base.Year{
-		Year:     2018,
-		Path:     "/2018/",
-		Key:      "2018",
-		Name:     "2018",
-		Sections: []*base.Section{&section_ranked, &section_unranked},
-	}
-	state.Years = make([]*base.Year, 1)
-	state.Years[0] = &year
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		route_request(site, w, r)
 	}

@@ -51,6 +51,57 @@ func exit(w http.ResponseWriter, r *http.Request) {
 	os.Exit(0)
 }
 
+func seed_site_state() state.SiteState {
+	entry := base.EntryInfo{
+		Path:          "/2018/section/entry/",
+		Key:           "key",
+		Title:         "title",
+		Author:        "author",
+		Asset:         "asset",
+		Description:   "description",
+		ExternalLinks: []base.ExternalLinksSection{},
+		Thumbnails: base.Thumbnails{
+			Default: base.ThumbnailInfo{
+				Path:     "/absolute/path",
+				Checksum: nil,
+				Size: base.Resolution{
+					X: 160,
+					Y: 90,
+				},
+				Type: "image/png",
+			},
+			Extra: []base.TypedThumbnails{},
+		},
+	}
+	section_ranked := base.Section{
+		Path:        "/2018/section-ranked/",
+		Key:         "section-ranked",
+		Name:        "Section ranked",
+		Description: "Here is a decent ranked description!",
+		IsRanked:    true,
+		Entries:     []*base.EntryInfo{&entry, &entry, &entry, &entry, &entry, &entry},
+	}
+	section_unranked := base.Section{
+		Path:        "/2018/section-unranked/",
+		Key:         "section-unranked",
+		Name:        "Section unranked",
+		Description: "Here is a decent unranked description!",
+		IsRanked:    false,
+		Entries:     []*base.EntryInfo{&entry, &entry, &entry, &entry, &entry, &entry},
+	}
+	year := base.Year{
+		Year:     2018,
+		Path:     "/2018/",
+		Key:      "2018",
+		Name:     "2018",
+		Sections: []*base.Section{&section_ranked, &section_unranked},
+	}
+	state := state.SiteState{
+		Years: []*base.Year{&year},
+	}
+	return state
+}
+
 func main() {
 	host := flag.String("host", "localhost", "Host interface to listen to")
 	port := flag.Int("port", 8080, "Port to listen to")
@@ -68,7 +119,8 @@ func main() {
 		StaticDir:    *static_dir,
 		TemplatesDir: *templates_dir,
 	}
-	state := &state.SiteState{}
+	state := seed_site_state()
+
 	if *devmode {
 		log.Println("Development mode enabled. DO NOT USE THIS IN PUBLIC! /exit is enabled!")
 		http.HandleFunc("/exit/", exit)
@@ -76,9 +128,9 @@ func main() {
 		http.HandleFunc("/exit/", exit_forbidden)
 	}
 	http.HandleFunc("/api/", server.StripPrefix("/api/",
-		server.BasicAuth(*authfile, api.Renderer(settings, state))))
+		server.BasicAuth(*authfile, api.Renderer(settings, &state))))
 	http.HandleFunc("/site/", server.StripPrefix("/site/",
-		site.SiteRenderer(settings, state)))
+		site.SiteRenderer(settings, &state)))
 	http.HandleFunc("/teapot/", RenderTeapot)
 	http.Handle("/site/_data/", http.StripPrefix("/site/_data/", http.FileServer(http.Dir(settings.DataDir))))
 	http.Handle("/site/_static/", http.StripPrefix("/site/_static/", http.FileServer(http.Dir(settings.StaticDir))))
