@@ -251,7 +251,7 @@ func _create_year_range_link(years []*base.Year) InternalLink {
 		}
 	} else if len(years) == 1 {
 		return InternalLink{
-			Path:     fmt.Sprintf("?y=%d", years[0].Year),
+			Path:     fmt.Sprintf("?y=%d-%d", years[0].Year, years[0].Year),
 			Contents: fmt.Sprintf("%d", years[0].Year),
 		}
 	}
