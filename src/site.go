@@ -241,6 +241,23 @@ func handle_year(
 	// fmt.Printf("year %v %s\n", path_elements, r.URL)
 }
 
+func _create_year_range_link(years []*base.Year) InternalLink {
+	if len(years) > 1 {
+		years_first := years[len(years)-1]
+		years_last := years[0]
+		return InternalLink{
+			Path:     fmt.Sprintf("?y=%d-%d", years_first.Year, years_last.Year),
+			Contents: fmt.Sprintf("%d-%d", years_first.Year, years_last.Year),
+		}
+	} else if len(years) == 1 {
+		return InternalLink{
+			Path:     fmt.Sprintf("?y=%d", years[0].Year),
+			Contents: fmt.Sprintf("%d", years[0].Year),
+		}
+	}
+	return InternalLink{}
+}
+
 func _read_year_range(
 	site Site, r *http.Request) ([]*base.Year, *InternalLink, *InternalLink, error) {
 	year_start := 0
@@ -271,8 +288,31 @@ func _read_year_range(
 		year_end = site.State.Years[0].Year
 		year_start = year_start + DEFAULT_MAIN_YEARS
 	}
+	max_year := year_end + 1 + DEFAULT_MAIN_YEARS
+	min_year := year_start - 1 - DEFAULT_MAIN_YEARS
 
-	return nil, nil, nil, nil
+	var years_before []*base.Year
+	var years []*base.Year
+	var years_after []*base.Year
+	for _, year := range site.State.Years {
+		if max_year < year.Year {
+			continue
+		}
+		if year.Year < min_year {
+			continue
+		}
+		if year.Year < year_start {
+			years_before = append(years_before, year)
+		} else if year_end < year.Year {
+			years_after = append(years_after, year)
+		} else {
+			years = append(years, year)
+		}
+	}
+
+	link_before := _create_year_range_link(years_before)
+	link_after := _create_year_range_link(years_after)
+	return years, &link_before, &link_after, nil
 }
 
 func handle_main(
@@ -347,10 +387,14 @@ func route_request(site Site,
 }
 
 func SiteRenderer(settings base.SiteSettings, state *state.SiteState) http.HandlerFunc {
+	templates, err := LoadTemplates(&settings)
+	if err != nil {
+		panic("Unable to load templates!")
+	}
 	site := Site{
 		Settings:  settings,
 		State:     state,
-		Templates: nil,
+		Templates: &templates,
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
