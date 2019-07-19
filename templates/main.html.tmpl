@@ -1,0 +1,19 @@
+{{- . is type of []*site.IndexContext -}}
+<p>
+  Welcome to Assembly Archive.
+  See a <a href="{{.Context.RootUrl}}/description">longer description</a> about this service.</p>
+{{range $index, $element := .Galleries}}
+<div class="mediacategory">
+  <h2 class="gallery-name"><a href="{{.Context.RootUrl}}{{$element.Path}}"><span>{{$element.Title|html}}</span>
+  » <span class="grayed smaller">(random selection)</span></a></h2>
+  <div class="mediaitemlisting">
+    {{template "thumbnails" $element.Entries}}
+  </div>
+</div>
+{{end}} {{- range $index, $element := .Galleries -}}
+{{if .YearsBefore.Contents}}
+<a href="?y={{.YearsBefore.Path}}">{{.YearsBefore.Contents|html}}</a>
+{{end}}
+{{if .YearsAfter.Contents}}
+<a href="?y={{.YearsAfter.Path}}">{{.YearsAfter.Contents|html}}</a>
+{{end}}

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 
 <title>
-{{ if .Title }}
-  {{ .Title }} &ndash; Assembly Archive
-{{ else }}
+{{if .Context.Title}}
+  {{.Context.Title}} &ndash; Assembly Archive
+{{else}}
   Assembly Archive
-{{ end }}
+{{end}}
 </title>
 
-{{block "metadata" .}}{{end}}
+{{block "metadata" .Context}}{{end}}
 
 <meta property="fb:page_id" content="183599045012296" />
 
@@ -30,8 +30,10 @@
 
 <meta name="viewport" content="width=640" />
 
+{{-
 <link rel="search" type="application/opensearchdescription+xml"
-title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
+      title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
+-}}
 
 </head>
 <body>

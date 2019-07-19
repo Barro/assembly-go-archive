@@ -1,6 +1,8 @@
+{{- . is type of []*base.EntryInfo -}}
+{{define "thumbnails"}}
 {{range $index, $element := .Entries}}
 <div class="video overview-thumbnail-{{$index}}">
-  <a class="thumbnail" href="{{.Path|html}}">
+  block <a class="thumbnail" href="{{.Path|html}}">
     {{/* TODO näytä useita thumbnail-vaihtoehtoja? */}}
     {{$thumbnail := .Thumbnails.Default}}
     <picture>
@@ -20,4 +22,5 @@
 </div>
 {{else}}
 Help! We have nothing in here!
-{{end}}
+{{end}} {{- range $index, $element := .Entries -}}
+{{end}} {{- define "thumbnails" -}}

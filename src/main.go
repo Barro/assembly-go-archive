@@ -10,11 +10,33 @@ import (
 	"os"
 	"server"
 	"site"
+	"state"
 )
 
 func RenderTeapot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTeapot)
 	w.Write([]byte("I'm a teapot\n"))
+}
+
+func exit_forbidden(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusForbidden)
+	w.Write([]byte("Can not exit without -dev mode!\n"))
+}
+
+func RenderLinks(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(`<html>
+<head><title>Namespaces</title></head>
+<body>
+<p>This offers following namespaces:</p>
+<ul>
+<li><a href="/api/">/api/</a> for database manipulation. Requires authentication.</li>
+<li><a href="/site/">/site/</a> should be exposed through a reverse proxy as the site root</li>
+<li><a href="/teapot/">/teapot/</a> I'm a teapot!</li>
+<li><a href="/exit/">/exit/</a> make me quit, only in <code>-dev</code> mode</li>
+</ul>
+</body>
+</html>
+`))
 }
 
 // Terminate by client request.
@@ -46,15 +68,21 @@ func main() {
 		StaticDir:    *static_dir,
 		TemplatesDir: *templates_dir,
 	}
+	state := &state.SiteState{}
 	if *devmode {
 		log.Println("Development mode enabled. DO NOT USE THIS IN PUBLIC! /exit is enabled!")
-		http.HandleFunc("/exit", exit)
+		http.HandleFunc("/exit/", exit)
+	} else {
+		http.HandleFunc("/exit/", exit_forbidden)
 	}
-	http.HandleFunc("/api/", server.StripPrefix("/api/", server.BasicAuth(*authfile, api.Renderer(settings))))
-	http.HandleFunc("/site/", server.StripPrefix("/site/", site.SiteRenderer(settings)))
+	http.HandleFunc("/api/", server.StripPrefix("/api/",
+		server.BasicAuth(*authfile, api.Renderer(settings, state))))
+	http.HandleFunc("/site/", server.StripPrefix("/site/",
+		site.SiteRenderer(settings, state)))
 	http.HandleFunc("/teapot/", RenderTeapot)
 	http.Handle("/site/_data/", http.StripPrefix("/site/_data/", http.FileServer(http.Dir(settings.DataDir))))
 	http.Handle("/site/_static/", http.StripPrefix("/site/_static/", http.FileServer(http.Dir(settings.StaticDir))))
+	http.HandleFunc("/", RenderLinks)
 	listen_addr := fmt.Sprintf("%s:%d", *host, *port)
 	log.Printf("Listening to %s", listen_addr)
 	log.Fatal(http.ListenAndServe(listen_addr, nil))

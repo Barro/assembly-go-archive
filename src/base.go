@@ -61,10 +61,11 @@ type Section struct {
 	Name        string
 	Description string
 	IsRanked    bool
-	Entries     []*ThumbnailedEntry
+	Entries     []*EntryInfo
 }
 
 type Year struct {
+	Year     int
 	Path     string
 	Key      string
 	Name     string

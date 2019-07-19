@@ -16,6 +16,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"state"
 	"strconv"
 	"strings"
 )
@@ -524,7 +525,7 @@ func renderer(settings base.SiteSettings, w http.ResponseWriter, r *http.Request
 	handle_section(settings, year, section, w, r)
 }
 
-func Renderer(settings base.SiteSettings) http.HandlerFunc {
+func Renderer(settings base.SiteSettings, state *state.SiteState) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		renderer(settings, w, r)
 	}

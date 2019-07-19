@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e
+set -u
+
+ROOT=$PWD
+cd "$BUILD_WORKING_DIRECTORY"
+exec "$ROOT"/{{APP}} -dir-static "$ROOT"/{{STATIC}} -dir-templates "$ROOT"/{{TEMPLATES}} "$@"

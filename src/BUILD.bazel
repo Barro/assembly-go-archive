@@ -54,6 +54,7 @@ go_binary(
         ":base",
         ":server",
         ":site",
+        ":state",
     ],
 )
 

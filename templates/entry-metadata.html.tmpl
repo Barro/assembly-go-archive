@@ -1,0 +1,13 @@
+{{define "metadata"}}
+{{- type(.) == site.PageContext -}}
+<meta property="og:title" content="{{.Title}}" />
+<meta property="og:type" content="article" />
+<meta property="og:author" content="{{.Author}}" />
+<meta property="og:site_name" content="Assembly Archive" />
+<meta property="og:url" content="{{.Url}}" />
+{{- TODO anna keino hakea asseting default thumbnail tällä polulla -}}
+<meta property="og:image" content="{{.Url}}/thumbnail"/>
+{{- TODO asseting description jotain kautta tänne! -}}
+<meta property="og:description" tal:attributes="content viewlet/description"/>
+<meta property="fb:app_id" content="183599045012296" />
+{{end}}
