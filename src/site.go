@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -21,6 +20,8 @@ import (
 )
 
 var DEFAULT_MAIN_YEARS = 15
+var MAX_MAIN_ENTRIES = 5
+var MAX_MAIN_SECTION_ENTRIES = 2
 
 type SiteTemplates struct {
 	Main        *template.Template
@@ -78,11 +79,14 @@ func _bad_request(w http.ResponseWriter) {
 	w.Write([]byte("Bad request!\n"))
 }
 
-// Randomly selects a number of entries by taking no more than 2 from
-// each section.
+// Randomly selects a number of entries by taking limited amount of
+// entries from each section. There are basically many different
+// possibilities to select viewable entries for the main page, but
+// this is a simple unweighted logic that makes sure that one section
+// with hundreds of entries does not dominate.
 func random_select_entries(year *base.Year, amount int) []*base.EntryInfo {
 	total_sections := len(year.Sections)
-	section_indexes := rand.Perm(total_sections * 2)
+	section_indexes := rand.Perm(total_sections * MAX_MAIN_SECTION_ENTRIES)
 	var result []*base.EntryInfo
 	for _, index_value := range section_indexes {
 		if len(result) == amount {
@@ -130,27 +134,6 @@ func peek_section_entries(section base.Section, amount int) []*base.EntryInfo {
     ],
 }
 */
-
-func entry_info_to_thumbnail(entry base.EntryInfo) base.ThumbnailedEntry {
-	return base.ThumbnailedEntry{}
-}
-
-func render_year(ctx PageContext, wr io.Writer, year *base.Year) {
-
-}
-
-func render_section(ctx PageContext, wr io.Writer, section *base.Section) {
-
-}
-
-func render_entry(ctx PageContext, wr io.Writer, entry *base.EntryInfo) {
-
-}
-
-func render_page(ctx PageContext, wr io.Writer) {
-	t := template.Must(template.ParseFiles("templates/layout.html.tmpl"))
-	t.Execute(wr, ctx)
-}
 
 func view_author_title(entry base.EntryInfo) string {
 	var author_title string
@@ -240,7 +223,6 @@ func handle_entry(
 	w http.ResponseWriter,
 	r *http.Request) {
 	//fmt.Printf("%v %s\n", path_elements, r.URL)
-	render(w, site.Settings)
 }
 
 func handle_section(
@@ -249,7 +231,6 @@ func handle_section(
 	w http.ResponseWriter,
 	r *http.Request) {
 	//fmt.Printf("%v %s\n", path_elements, r.URL)
-	render(w, site.Settings)
 }
 
 func handle_year(
@@ -258,7 +239,6 @@ func handle_year(
 	w http.ResponseWriter,
 	r *http.Request) {
 	// fmt.Printf("year %v %s\n", path_elements, r.URL)
-	render(w, site.Settings)
 }
 
 func _read_year_range(
@@ -312,7 +292,7 @@ func handle_main(
 		gallery_thumbnails[i] = GalleryThumbnails{
 			Path:    year.Path,
 			Title:   year.Name,
-			Entries: random_select_entries(year, 5),
+			Entries: random_select_entries(year, MAX_MAIN_ENTRIES),
 		}
 	}
 	page_context := PageContext{}
@@ -423,35 +403,4 @@ func SiteRenderer(settings base.SiteSettings, state *state.SiteState) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		route_request(site, w, r)
 	}
-}
-
-func render(w http.ResponseWriter, settings base.SiteSettings) {
-	/*
-		ctx := PageContext{
-			Title:   "",
-			RootUrl: "http://localhost:4000",
-			Url:     "http://localhost:4000",
-		}
-		render_page(ctx, w)
-
-		checksum := "sadf12"
-		thumbnail := base.ThumbnailedEntry{
-			Path:   "/section/otsikko-by-autori",
-			Key:    "otsikko-by-autori",
-			Title:  "otsikko",
-			Author: "autori",
-			Thumbnails: base.Thumbnails{
-				Default: base.ThumbnailInfo{
-					Path:     "/section/otsikko-by-autori/thumbnail.png",
-					Checksum: &checksum,
-					Size:     base.Resolution{10, 10},
-					Type:     "image/png",
-				},
-				Extra: []base.TypedThumbnails{},
-			},
-		}
-
-		// }
-		render_thumbnail(w, thumbnail)
-	*/
 }
