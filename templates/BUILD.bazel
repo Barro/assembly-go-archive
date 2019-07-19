@@ -1,0 +1,14 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+pkg_tar(
+    name = "templates",
+    srcs = [
+        ":thumbnails.html.tmpl",
+        ":main.html.tmpl",
+        ":year.html.tmpl",
+        ":section.html.tmpl",
+        ":entry-metadata.html.tmpl",
+    ],
+    package_dir = "templates",
+    visibility = ["//visibility:public"],
+)

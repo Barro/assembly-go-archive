@@ -60,8 +60,8 @@ type InternalLink struct {
 type MainContext struct {
 	Galleries   []GalleryThumbnails
 	YearsBefore InternalLink
-	YearAfter   InternalLink
-	Context     *PageContext
+	YearsAfter  InternalLink
+	Context     PageContext
 }
 
 func in_array(array []*base.EntryInfo, entry *base.EntryInfo) bool {
@@ -80,7 +80,7 @@ func _bad_request(w http.ResponseWriter) {
 
 // Randomly selects a number of entries by taking no more than 2 from
 // each section.
-func random_select_entries(year base.Year, amount int) []*base.EntryInfo {
+func random_select_entries(year *base.Year, amount int) []*base.EntryInfo {
 	total_sections := len(year.Sections)
 	section_indexes := rand.Perm(total_sections * 2)
 	var result []*base.EntryInfo
@@ -172,10 +172,10 @@ func LoadTemplates(settings *base.SiteSettings) (SiteTemplates, error) {
 	data := "asdf"
 	var generic *template.Template
 	{
-		generic = template.New("gallery")
+		generic = template.New("thumbnails")
 	}
 	{
-		t := template.Must(generic.Clone()).New("index")
+		t := template.Must(generic.Clone()).New("main")
 		templates.Main = template.Must(t.Parse(data))
 	}
 	{
@@ -198,12 +198,12 @@ func LoadTemplates(settings *base.SiteSettings) (SiteTemplates, error) {
 }
 
 func NewGalleryTemplate(settings *base.SiteSettings) (*template.Template, error) {
-	ti := template.New("gallery")
+	ti := template.New("thumbnails")
 	functions := template.FuncMap{}
 	functions["view_author_title"] = view_author_title
 	ti = ti.Funcs(functions)
 	template_data, data_err := ioutil.ReadFile(
-		path.Join(settings.TemplatesDir, "gallery.html.tmpl"))
+		path.Join(settings.TemplatesDir, "thumbnails.html.tmpl"))
 	if data_err != nil {
 		return nil, data_err
 	}
@@ -221,7 +221,6 @@ func render_template(
 	wr := bufio.NewWriterSize(w, 1024*64)
 	err := t.Execute(wr, data)
 	if err != nil {
-		server.Ise(w)
 		return err
 	} else {
 		return wr.Flush()
@@ -292,6 +291,7 @@ func _read_year_range(
 		year_end = site.State.Years[0].Year
 		year_start = year_start + DEFAULT_MAIN_YEARS
 	}
+
 	return nil, nil, nil, nil
 }
 
@@ -301,13 +301,32 @@ func handle_main(
 	w http.ResponseWriter,
 	r *http.Request) {
 	fmt.Printf("main %v %s\n", path_elements, r.URL)
-	//context := PageContext{}
-	// years, years_before, years_after, err := _read_year_range(site, r)
-	// if err != nil {
-	// 	_bad_request(w)
-	// 	return
-	// }
-	render(w, site.Settings)
+	years, years_before, years_after, err_year_range := _read_year_range(site, r)
+	if err_year_range != nil {
+		_bad_request(w)
+		log.Printf("Invalid year range request: %s", err_year_range)
+		return
+	}
+	gallery_thumbnails := make([]GalleryThumbnails, len(years))
+	for i, year := range years {
+		gallery_thumbnails[i] = GalleryThumbnails{
+			Path:    year.Path,
+			Title:   year.Name,
+			Entries: random_select_entries(year, 5),
+		}
+	}
+	page_context := PageContext{}
+	context := MainContext{
+		Galleries:   gallery_thumbnails,
+		YearsBefore: *years_before,
+		YearsAfter:  *years_after,
+		Context:     page_context,
+	}
+	err_template := render_template(w, site.Templates.Main, context)
+	if err_template != nil {
+		server.Ise(w)
+		log.Printf("Internal main page error: %s", err_template)
+	}
 }
 
 type RequestHandler struct {
