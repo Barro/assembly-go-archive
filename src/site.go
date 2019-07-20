@@ -15,7 +15,6 @@ import (
 	"server"
 	"state"
 	"strconv"
-	"strings"
 	"text/template"
 )
 
@@ -150,16 +149,48 @@ type GalleryRenderer struct {
 	Template *template.Template
 }
 
-func LoadTemplates(settings *base.SiteSettings) (SiteTemplates, error) {
+func load_template(settings *base.SiteSettings, name string, clonable *template.Template) (*template.Template, error) {
+	t := template.New(name)
+	if clonable != nil {
+		t = clonable.New(name)
+	}
+	template_data, data_err := ioutil.ReadFile(
+		path.Join(settings.TemplatesDir, name+".html.tmpl"))
+	if data_err != nil {
+		return nil, data_err
+	}
+	t_read, parse_err := t.Parse(string(template_data))
+	if parse_err != nil {
+		return nil, parse_err
+	}
+	return t_read, nil
+}
+
+func create_base_template(name string) *template.Template {
+	t := template.New(name)
+	functions := template.FuncMap{}
+	functions["view_author_title"] = view_author_title
+	return t.Funcs(functions)
+}
+
+func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 	var templates SiteTemplates
 	data := "asdf"
-	var generic *template.Template
+
+	generic := create_base_template("generic")
+
+	var err error
 	{
-		generic = template.New("thumbnails")
+		generic, err = load_template(settings, "thumbnails", generic)
+		if err != nil {
+			return templates, err
+		}
 	}
 	{
-		t := template.Must(generic.Clone()).New("main")
-		templates.Main = template.Must(t.Parse(data))
+		templates.Main, err = load_template(settings, "main", generic)
+		if err != nil {
+			return templates, err
+		}
 	}
 	{
 		t := template.New("year")
@@ -264,18 +295,18 @@ func _read_year_range(
 	year_end := 99999
 	year_range_requested := string(r.FormValue("y"))
 	if len(year_range_requested) > 0 {
-		year_range_regexp := regexp.MustCompile("^\\d{4}-\\d{4}$")
-		if len(year_range_regexp.FindString(year_range_requested)) == 0 {
+		year_range_regexp := regexp.MustCompile("^(\\d{4})-(\\d{4})$")
+		match := year_range_regexp.FindStringSubmatch(year_range_requested)
+		if match == nil {
 			log.Printf("Year range is not a numeric range")
 			return nil, nil, nil, errors.New("Year range is not a numeric range")
 		}
-		start_end_str := strings.Split("-", year_range_requested)
 		var err error
-		year_start, err = strconv.Atoi(start_end_str[0])
+		year_start, err = strconv.Atoi(match[1])
 		if err != nil {
 			panic(err)
 		}
-		year_end, err = strconv.Atoi(start_end_str[1])
+		year_end, err = strconv.Atoi(match[2])
 		if err != nil {
 			panic(err)
 		}
@@ -387,8 +418,9 @@ func route_request(site Site,
 }
 
 func SiteRenderer(settings base.SiteSettings, state *state.SiteState) http.HandlerFunc {
-	templates, err := LoadTemplates(&settings)
+	templates, err := load_templates(&settings)
 	if err != nil {
+		log.Println(err)
 		panic("Unable to load templates!")
 	}
 	site := Site{

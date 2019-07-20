@@ -1,19 +1,21 @@
-{{- . is type of []*site.IndexContext -}}
+{{/* . is type of []*site.MainContext */}}
 <p>
   Welcome to Assembly Archive.
   See a <a href="{{.Context.RootUrl}}/description">longer description</a> about this service.</p>
+{{$ctx := .}}
 {{range $index, $element := .Galleries}}
 <div class="mediacategory">
-  <h2 class="gallery-name"><a href="{{.Context.RootUrl}}{{$element.Path}}"><span>{{$element.Title|html}}</span>
+  <h2 class="gallery-name"><a href="{{$ctx.Context.RootUrl}}{{$element.Path}}"><span>{{$element.Title|html}}</span>
   » <span class="grayed smaller">(random selection)</span></a></h2>
   <div class="mediaitemlisting">
     {{template "thumbnails" $element.Entries}}
   </div>
 </div>
-{{end}} {{- range $index, $element := .Galleries -}}
-{{if .YearsBefore.Contents}}
-<a href="?y={{.YearsBefore.Path}}">{{.YearsBefore.Contents|html}}</a>
+{{end}} {{/* range $index, $element := .Galleries */}}
+{{if $ctx.YearsBefore.Contents}}
+<a href="?y={{$ctx.YearsBefore.Path}}">{{$ctx.YearsBefore.Contents|html}}</a>
 {{end}}
-{{if .YearsAfter.Contents}}
-<a href="?y={{.YearsAfter.Path}}">{{.YearsAfter.Contents|html}}</a>
+{{if $ctx.YearsAfter.Contents}}
+<a href="?y={{$ctx.YearsAfter.Path}}">{{$ctx.YearsAfter.Contents|html}}</a>
 {{end}}
+
