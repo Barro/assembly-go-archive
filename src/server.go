@@ -34,12 +34,14 @@ func read_auth_data(filename string) (AuthData, error) {
 	if is_file_wide_open(filename) {
 		return nil, &UsernamePasswordError{"File " + filename + " should only be readable by the current user!"}
 	}
+	m := make(map[string]string)
 	file, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		log.Printf(
+			"Unable to read authentication data from %s: %s", filename, err)
+		return m, nil
 	}
 
-	m := make(map[string]string)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
