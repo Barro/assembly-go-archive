@@ -49,7 +49,7 @@ type PageContext struct {
 type GalleryThumbnails struct {
 	Path    string
 	Title   string
-	Entries []*base.EntryInfo
+	Entries []*base.Entry
 }
 
 type InternalLink struct {
@@ -86,9 +86,9 @@ type SectionInfo struct {
 type EntryInfo struct {
 	Year    *base.Year
 	Section *base.Section
-	Prev    *base.EntryInfo
-	Curr    *base.EntryInfo
-	Next    *base.EntryInfo
+	Prev    *base.Entry
+	Curr    *base.Entry
+	Next    *base.Entry
 }
 
 type SectionContext struct {
@@ -104,7 +104,7 @@ type EntryContext struct {
 	Context PageContext
 }
 
-func in_array(array []*base.EntryInfo, entry *base.EntryInfo) bool {
+func in_array(array []*base.Entry, entry *base.Entry) bool {
 	for _, array_entry := range array {
 		if array_entry.Path == entry.Path {
 			return true
@@ -118,13 +118,13 @@ func _bad_request(w http.ResponseWriter) {
 	w.Write([]byte("Bad request!\n"))
 }
 
-func random_select_section_entries(section *base.Section, amount int) []*base.EntryInfo {
+func random_select_section_entries(section *base.Section, amount int) []*base.Entry {
 	section_indexes := rand.Perm(len(section.Entries))
 	max_items := len(section.Entries)
 	if amount < max_items {
 		max_items = amount
 	}
-	result := make([]*base.EntryInfo, max_items)
+	result := make([]*base.Entry, max_items)
 	for i := 0; i < max_items; i++ {
 		result[i] = section.Entries[section_indexes[i]]
 	}
@@ -136,10 +136,10 @@ func random_select_section_entries(section *base.Section, amount int) []*base.En
 // possibilities to select viewable entries for the main page, but
 // this is a simple unweighted logic that makes sure that one section
 // with hundreds of entries does not dominate.
-func random_select_entries(year *base.Year, amount int) []*base.EntryInfo {
+func random_select_entries(year *base.Year, amount int) []*base.Entry {
 	total_sections := len(year.Sections)
 	section_indexes := rand.Perm(total_sections * MAX_MAIN_SECTION_ENTRIES)
-	var result []*base.EntryInfo
+	var result []*base.Entry
 	for _, index_value := range section_indexes {
 		if len(result) == amount {
 			break
@@ -162,12 +162,12 @@ func random_select_entries(year *base.Year, amount int) []*base.EntryInfo {
 // If the section is ranked, returns the top "amount" entries. If it's
 // not, returns random selection of entries. This is to promote the
 // best ranked entries where it's possible.
-func peek_section_entries(section base.Section, amount int) []*base.EntryInfo {
+func peek_section_entries(section base.Section, amount int) []*base.Entry {
 	if section.IsRanked {
 		return section.Entries[:amount]
 	}
 
-	var result []*base.EntryInfo
+	var result []*base.Entry
 	for _, index := range rand.Perm(len(section.Entries))[:amount] {
 		result = append(result, section.Entries[index])
 	}
@@ -189,7 +189,7 @@ func peek_section_entries(section base.Section, amount int) []*base.EntryInfo {
 }
 */
 
-func view_author_title(entry base.EntryInfo) string {
+func view_author_title(entry base.Entry) string {
 	var author_title string
 	if entry.Author == "" {
 		author_title = entry.Title

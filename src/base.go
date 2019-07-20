@@ -35,7 +35,7 @@ type ExternalLinksSection struct {
 }
 
 // Structure that has all known data about an entry.
-type EntryInfo struct {
+type Entry struct {
 	Path          string
 	Key           string
 	Title         string
@@ -52,7 +52,7 @@ type Section struct {
 	Name        string
 	Description string
 	IsRanked    bool
-	Entries     []*EntryInfo
+	Entries     []*Entry
 }
 
 type Year struct {

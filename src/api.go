@@ -265,9 +265,9 @@ func read_section_info(directory string, url_path string) (OrderedSection, error
 	return section, nil
 }
 
-func read_entry_info(directory string, url_path string) (base.EntryInfo, error) {
+func read_entry_info(directory string, url_path string) (base.Entry, error) {
 	key := filepath.Base(directory)
-	entry := base.EntryInfo{Path: url_path, Key: key}
+	entry := base.Entry{Path: url_path, Key: key}
 
 	data, err_read := read_meta_bytes(directory)
 	if err_read != nil {

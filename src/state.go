@@ -57,13 +57,13 @@ func (section *NavSection) Prev() *NavSection {
 }
 
 type NavEntry struct {
-	context *base.EntryInfo
+	context *base.Entry
 	parent  *NavSection
 	next    *NavEntry
 	prev    *NavEntry
 }
 
-func (entry *NavEntry) Context() *base.EntryInfo {
+func (entry *NavEntry) Context() *base.Entry {
 	return entry.context
 }
 func (entry *NavEntry) Parent() *NavSection {

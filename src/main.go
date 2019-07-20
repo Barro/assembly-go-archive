@@ -53,7 +53,7 @@ func exit(w http.ResponseWriter, r *http.Request) {
 }
 
 func create_sections(year base.Year) []*base.Section {
-	entry := base.EntryInfo{
+	entry := base.Entry{
 		Path:          "/2018/section/entry",
 		Key:           "entry",
 		Title:         "title",
@@ -94,7 +94,7 @@ func create_sections(year base.Year) []*base.Section {
 		new_section_ranked := section_ranked
 		new_section_ranked.Key = new_section_ranked.Key + "-" + strconv.Itoa(i)
 		new_section_ranked.Name = new_section_ranked.Name + " " + strconv.Itoa(i)
-		var entries_ranked []*base.EntryInfo
+		var entries_ranked []*base.Entry
 		for i := 0; i < 20; i++ {
 			new_entry := entry
 			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
@@ -108,7 +108,7 @@ func create_sections(year base.Year) []*base.Section {
 		new_section_unranked.Key = new_section_unranked.Key + "-" + strconv.Itoa(i)
 		new_section_unranked.Name = new_section_unranked.Name + " " + strconv.Itoa(i)
 		copy(new_section_unranked.Entries, section_unranked.Entries)
-		var entries_unranked []*base.EntryInfo
+		var entries_unranked []*base.Entry
 		for i := 0; i < 20; i++ {
 			new_entry := entry
 			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
