@@ -1,0 +1,15 @@
+<h2 class="gallery-breadcrumbs">
+  {{$ctx := .}}
+  {{range $index, $page := .Parents}}
+  {{if $index}}
+  &raquo;
+  {{end}}
+  <a href="{{.Path}}">{{.Contents|html}}</a>
+  {{end}} {{/*range $index, $page := .*/}}
+  {{if $ctx.Last.Contents}}
+  {{if .Parents}}
+  &raquo;
+  {{end}}
+  {{$ctx.Last.Contents}}
+  {{end}}
+</h2>

@@ -36,7 +36,14 @@ type Site struct {
 	Templates *SiteTemplates
 }
 
+type Breadcrumbs struct {
+	Parents []InternalLink
+	Last    InternalLink
+}
+
 type PageContext struct {
+	Path        string
+	Breadcrumbs Breadcrumbs
 	Title       string
 	SiteRoot    string
 	Url         string
@@ -244,10 +251,12 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 
 	var err error
 	{
-		generic, err = load_template(settings, "thumbnails", "thumbnails.html.tmpl", generic)
-		if err != nil {
-			return templates, err
-		}
+		generic = template.Must(
+			load_template(settings, "thumbnails", "thumbnails.html.tmpl", generic))
+		generic = template.Must(
+			load_template(settings, "breadcrumbs", "breadcrumbs.html.tmpl", generic))
+		generic = template.Must(
+			load_template(settings, "navbar", "navbar.html.tmpl", generic))
 	}
 	{
 		contents := template.Must(
@@ -342,7 +351,21 @@ func handle_entry(
 	}
 
 	page_context := PageContext{
+		Path:     path_elements[""],
+		Title:    view_author_title(*entry.Curr),
 		SiteRoot: site.Settings.SiteRoot,
+		Breadcrumbs: Breadcrumbs{
+			Parents: []InternalLink{
+				InternalLink{
+					Path:     entry.Year.Path,
+					Contents: entry.Year.Key,
+				},
+				InternalLink{
+					Path:     entry.Section.Path,
+					Contents: entry.Section.Name,
+				},
+			},
+		},
 	}
 	context := EntryContext{
 		Year:    entry.Year,
@@ -369,8 +392,23 @@ func handle_section(
 		return
 	}
 
+	title := section.Year.Key + " / " + section.Curr.Name
 	page_context := PageContext{
+		Path:     path_elements[""],
+		Title:    title,
 		SiteRoot: site.Settings.SiteRoot,
+		Breadcrumbs: Breadcrumbs{
+			Parents: []InternalLink{
+				InternalLink{
+					Path:     section.Year.Path,
+					Contents: section.Year.Key,
+				},
+			},
+			Last: InternalLink{
+				Path:     section.Curr.Path,
+				Contents: section.Curr.Name,
+			},
+		},
 	}
 	context := SectionContext{
 		Section: section,
@@ -480,7 +518,15 @@ func handle_year(
 	}
 
 	page_context := PageContext{
+		Path:     path_elements[""],
+		Title:    year.Curr.Key,
 		SiteRoot: site.Settings.SiteRoot,
+		Breadcrumbs: Breadcrumbs{
+			Last: InternalLink{
+				Path:     year.Curr.Path,
+				Contents: year.Curr.Key,
+			},
+		},
 	}
 
 	gallery_thumbnails := make([]GalleryThumbnails, len(year.Curr.Sections))
@@ -504,7 +550,10 @@ func handle_year(
 	}
 }
 
-func _create_year_range_link(years []*base.Year, latest_year *base.Year) InternalLink {
+func _create_year_range_link(
+	site Site,
+	years []*base.Year,
+	latest_year *base.Year) InternalLink {
 	if len(years) == 0 {
 		return InternalLink{}
 	}
@@ -584,8 +633,8 @@ func _read_year_range(
 	if len(site.State.Years) > 0 {
 		latest_year = site.State.Years[0]
 	}
-	link_before := _create_year_range_link(years_before, latest_year)
-	link_after := _create_year_range_link(years_after, latest_year)
+	link_before := _create_year_range_link(site, years_before, latest_year)
+	link_after := _create_year_range_link(site, years_after, latest_year)
 	return years, &link_before, &link_after, nil
 }
 
@@ -610,6 +659,7 @@ func handle_main(
 		}
 	}
 	page_context := PageContext{
+		Path:     path_elements[""],
 		SiteRoot: site.Settings.SiteRoot,
 	}
 	context := MainContext{

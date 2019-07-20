@@ -52,7 +52,7 @@ func exit(w http.ResponseWriter, r *http.Request) {
 	os.Exit(0)
 }
 
-func create_sections(year base.Year) []*base.Section {
+func create_sections(site_root string, year base.Year) []*base.Section {
 	entry := base.Entry{
 		Path:          "/2018/section/entry",
 		Key:           "entry",
@@ -63,7 +63,7 @@ func create_sections(year base.Year) []*base.Section {
 		ExternalLinks: []base.ExternalLinksSection{},
 		Thumbnails: base.Thumbnails{
 			Default: base.ThumbnailInfo{
-				Path:     "/absolute/path",
+				Path:     site_root + "/_data/2018/music-background.jpeg",
 				Checksum: nil,
 				Size: base.Resolution{
 					X: 160,
@@ -145,7 +145,7 @@ func seed_site_state(site_root string) state.SiteState {
 			Key:  strconv.Itoa(i),
 			Name: strconv.Itoa(i),
 		}
-		new_year.Sections = create_sections(new_year)
+		new_year.Sections = create_sections(site_root, new_year)
 		years = append(years, &new_year)
 	}
 	state := state.SiteState{

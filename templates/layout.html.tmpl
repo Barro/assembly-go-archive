@@ -32,7 +32,7 @@
 
 {{/*
 <link rel="search" type="application/opensearchdescription+xml"
-      title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
+      title="Assembly Archive" href="{{.RootUrl}}/@@osdd.xml" />
 */}}
 
 </head>
@@ -41,11 +41,13 @@
 
     <header id="header" class="clearfix">
       <div class="alpha grid_5" id="archive-logo">
-        <a id="archive-logo-image" tal:attributes="href python:view.url(view) != view.application_url('index') and view.application_url() or None" title="Assembly Archive">
-          <!-- <img tal:attributes="src context/@@layouthelper/static/images/archive-logo.png" alt="Assembly Archive"/> -->
-        </a>
+        {{if .Context.Path}}
+        <a id="archive-logo-image" href="{{.Context.SiteRoot|html}}"
+           title="Assembly Archive"></a>
+        {{else}}
+        <span id="archive-logo-image" title="Assembly Archive"></span>
+        {{end}}
       </div>
-      <a id="mobile-logo" tal:attributes="href view/application_url"></a>
 
       <nav class="grid_8 omega">
         <ul tal:replace="structure context/@@yearlynavigation" />
@@ -61,7 +63,6 @@
     </header>
 
     {{template "page-contents" .}}
-
 
     <!--
     <div class="mobile-search hide-desktop">
@@ -82,12 +83,6 @@
       <a href="http://www.assembly.org/">assembly.org</a>
     </footer>
   </div>
-
-<!-- List of JS files that are optimized and appended into one with yui-compressor -->
-<!-- <script type="text/javascript" src="/@@/asm.archive/js/jquery-1.6.2.min.js"></script> -->
-<!-- <script type="text/javascript" src="/@@/asm.archive/js/html5placeholder-1.01.jquery.min.js"></script> -->
-<!-- <script type="text/javascript" src="/@@/asm.archive/js/archive.js"></script> -->
-
 <script type="text/javascript">
 (function() {
   function async_load(){
@@ -95,7 +90,7 @@
     s.type = 'text/javascript';
     s.async = true;
     s.src = (document.location.protocol + '//' +
-             document.location.host + '/@@/asm.archive/allscripts-min.js');
+             document.location.host + '{{.Context.SiteRoot|html}}/_static/allscripts-min.js');
     var x = document.getElementsByTagName('script')[0];
     x.parentNode.insertBefore(s, x);
   }

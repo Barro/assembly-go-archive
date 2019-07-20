@@ -1,0 +1,28 @@
+{{if or .Breadcrumbs.Parents .Breadcrumbs.Last.Contents}}
+{{template "breadcrumbs" .Breadcrumbs}}
+{{end}}
+<nav class="navigation clearfix"
+     tal:define="prev view/previous;
+                 next view/next">
+
+  <a class="grid_3 left gallery-navigation-link"
+     id="gallery-link-prev"
+     tal:condition="prev"
+     tal:attributes="href python:view.url(prev)">
+    &laquo; <span tal:replace="python: view.cut_string(prev.title, 22)" />
+  </a>
+  <span class="grid_3 left gallery-navigation-link" tal:condition="not: prev">&nbsp;</span>
+
+  <div class="hide-mobile">
+    <div tal:replace="structure context/@@gallerybreadcrumbs"/>
+  </div>
+
+  <a class="grid_3 right gallery-navigation-link"
+     id="gallery-link-next"
+     tal:condition="next"
+     tal:attributes="href python:view.url(next)">
+    <span tal:replace="python: view.cut_string(next.title, 22)" /> &raquo;
+  </a>
+  <span class="grid_3 right gallery-navigation-link" tal:condition="not: next">&nbsp;</span>
+
+</nav>

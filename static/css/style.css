@@ -261,7 +261,7 @@ h2 {
 }
 
 @media only screen and (max-width: 680px) {
-  #archive-logo, .overview-thumbnail-3, .overview-thumbnail-4 {
+  .overview-thumbnail-3, .overview-thumbnail-4 {
     display: none;
   }
 
@@ -270,10 +270,10 @@ h2 {
     display: none ! important;
   }
 
-  #mobile-logo {
+  #archive-logo-image {
     display: inline-block;
     float: left;
-    background: url(images/mobile-logo.png) no-repeat;
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAAAbAgMAAAD+E2KpAAAADFBMVEUAAAD////+/v79/f2p/HEYAAAAAXRSTlMAQObYZgAAAQlJREFUeAFE0gFmHWEUhuHnP84QwFlCNtI6oQu4yKyim7j7SdEddJYQdAEBihaD0LS9yfRXleD14AP4MNqyYj0tPWa3lpt1DRJOFgBqI0FJ9QpJUPhBf/8M0P7cBfBlsLHZTY5JAIwDAEg+/AQJYFwheKId+Y/SeCzCwAAGPUALijG4fh1y14IHnl3cg34GLaQiFV7WBo2gd3HaNYA6WztMxmHTxmCAJkAeNHE3JEELA09g8jLzzvFxC+8BAIAABw0gLxDjCgBggPDrVtaASWYxIUA1KKlcHiSRifu29cTjjInw7RMaAM4Q1YAqgIZwpujrpd9OsqwCdPmKVlqAuIEuv+3/h7+DxAgAVJ9Fy5cUoLEAAAAASUVORK5CYII=") no-repeat;
     width: 96px;
     height: 45px;
     margin-top: 4px;
