@@ -93,6 +93,7 @@ func create_sections(year base.Year) []*base.Section {
 	for i := 0; i < 25; i++ {
 		new_section_ranked := section_ranked
 		new_section_ranked.Key = new_section_ranked.Key + "-" + strconv.Itoa(i)
+		new_section_ranked.Name = new_section_ranked.Name + " " + strconv.Itoa(i)
 		var entries_ranked []*base.EntryInfo
 		for i := 0; i < 20; i++ {
 			new_entry := entry
@@ -105,6 +106,7 @@ func create_sections(year base.Year) []*base.Section {
 
 		new_section_unranked := section_unranked
 		new_section_unranked.Key = new_section_unranked.Key + "-" + strconv.Itoa(i)
+		new_section_unranked.Name = new_section_unranked.Name + " " + strconv.Itoa(i)
 		copy(new_section_unranked.Entries, section_unranked.Entries)
 		var entries_unranked []*base.EntryInfo
 		for i := 0; i < 20; i++ {

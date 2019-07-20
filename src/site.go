@@ -19,7 +19,7 @@ import (
 )
 
 var DEFAULT_MAIN_YEARS = 15
-var MAX_MAIN_ENTRIES = 5
+var MAX_PREVIEW_ENTRIES = 5
 var MAX_MAIN_SECTION_ENTRIES = 2
 
 type SiteTemplates struct {
@@ -64,6 +64,14 @@ type MainContext struct {
 	Context     PageContext
 }
 
+type YearContext struct {
+	Year      *base.Year
+	NextYear  *base.Year
+	PrevYear  *base.Year
+	Galleries []GalleryThumbnails
+	Context   PageContext
+}
+
 func in_array(array []*base.EntryInfo, entry *base.EntryInfo) bool {
 	for _, array_entry := range array {
 		if array_entry.Path == entry.Path {
@@ -76,6 +84,19 @@ func in_array(array []*base.EntryInfo, entry *base.EntryInfo) bool {
 func _bad_request(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("Bad request!\n"))
+}
+
+func random_select_section_entries(section *base.Section, amount int) []*base.EntryInfo {
+	section_indexes := rand.Perm(len(section.Entries))
+	max_items := len(section.Entries)
+	if amount < max_items {
+		max_items = amount
+	}
+	result := make([]*base.EntryInfo, max_items)
+	for i := 0; i < max_items; i++ {
+		result[i] = section.Entries[section_indexes[i]]
+	}
+	return result
 }
 
 // Randomly selects a number of entries by taking limited amount of
@@ -195,8 +216,10 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 		}
 	}
 	{
-		t := template.New("year")
-		templates.Year = template.Must(t.Parse(data))
+		templates.Year, err = load_template(settings, "year", generic)
+		if err != nil {
+			return templates, err
+		}
 	}
 	{
 		t := template.New("section")
@@ -271,7 +294,58 @@ func handle_year(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	// fmt.Printf("year %v %s\n", path_elements, r.URL)
+	requested_year, year_err := strconv.Atoi(path_elements["Year"])
+	if year_err != nil {
+		log.Printf(
+			"Invalid requested year: %s: %s", path_elements["Year"], year_err)
+		http.NotFound(w, r)
+		return
+	}
+	var next_year *base.Year
+	var year *base.Year
+	var prev_year *base.Year
+	last_index := 0
+	for i, candidate_year := range site.State.Years {
+		last_index = i
+		if candidate_year.Year == requested_year {
+			year = candidate_year
+			break
+		}
+		next_year = candidate_year
+	}
+	if year == nil {
+		http.NotFound(w, r)
+		return
+	}
+	if last_index+1 < len(site.State.Years) {
+		prev_year = site.State.Years[last_index+1]
+	}
+
+	page_context := PageContext{
+		SiteRoot: site.Settings.SiteRoot,
+	}
+
+	gallery_thumbnails := make([]GalleryThumbnails, len(year.Sections))
+	for i, section := range year.Sections {
+		thumbnails := GalleryThumbnails{
+			Path:    section.Path,
+			Title:   section.Name,
+			Entries: random_select_section_entries(section, MAX_PREVIEW_ENTRIES),
+		}
+		gallery_thumbnails[i] = thumbnails
+	}
+	context := YearContext{
+		Galleries: gallery_thumbnails,
+		Year:      year,
+		NextYear:  next_year,
+		PrevYear:  prev_year,
+		Context:   page_context,
+	}
+	err_template := render_template(w, site.Templates.Year, context)
+	if err_template != nil {
+		server.Ise(w)
+		log.Printf("Internal main page error: %s", err_template)
+	}
 }
 
 func _create_year_range_link(years []*base.Year, latest_year *base.Year) InternalLink {
@@ -376,7 +450,7 @@ func handle_main(
 		gallery_thumbnails[i] = GalleryThumbnails{
 			Path:    year.Path,
 			Title:   year.Name,
-			Entries: random_select_entries(year, MAX_MAIN_ENTRIES),
+			Entries: random_select_entries(year, MAX_PREVIEW_ENTRIES),
 		}
 	}
 	page_context := PageContext{

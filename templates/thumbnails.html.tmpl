@@ -2,7 +2,7 @@
 {{define "thumbnails"}}
 {{range $index, $element := .}}
 <div class="video overview-thumbnail-{{$index}}">
-  block <a class="thumbnail" href="{{.Path|html}}">
+  <a class="thumbnail" href="{{.Path|html}}">
     {{/* TODO näytä useita thumbnail-vaihtoehtoja? */}}
     {{$thumbnail := .Thumbnails.Default}}
     <picture>

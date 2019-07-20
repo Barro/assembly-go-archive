@@ -1,1 +1,18 @@
 <!-- näytä osiot järjestyksessä ja kuvat kisajärjestyksessä/satunnaisjärjestyksessä näistä -->
+{{/* . is type of []*site.YearContext */}}
+{{/* TODO navigaatioon nämä */}}
+{{$ctx := .}}
+{{if $ctx.NextYear}}
+<a href="{{$ctx.NextYear.Path}}">{{$ctx.NextYear.Key}}</a>
+{{end}}
+{{if $ctx.PrevYear}}
+<a href="{{$ctx.PrevYear.Path}}">{{$ctx.PrevYear.Key}}</a>
+{{end}}
+{{range $index, $element := .Galleries}}
+<div class="mediacategory">
+  <h2 class="gallery-name"><a href="{{$element.Path|html}}"><span>{{$element.Title|html}}</span></h2>
+  <div class="mediaitemlisting">
+    {{template "thumbnails" $element.Entries}}
+  </div>
+</div>
+{{end}}
