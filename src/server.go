@@ -22,7 +22,7 @@ func is_file_wide_open(filename string) bool {
 	if err != nil {
 		return false
 	}
-	if stats.Mode()&044 != 0 {
+	if stats.Mode().Perm()&0044 != 0 {
 		return true
 	}
 	return false
