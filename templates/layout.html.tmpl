@@ -16,9 +16,9 @@
 <meta property="fb:page_id" content="183599045012296" />
 
 <link rel="shortcut icon" type="image/vnd.microsoft.icon"
-      href="/static/images/favicon.ico" />
+      href="{{.Context.SiteRoot}}/_static/images/favicon.ico" />
 <link rel="icon" type="image/vnd.microsoft.icon"
-      href="/static/images/favicon.ico" />
+      href="{{.Context.SiteRoot}}/_static/images/favicon.ico" />
 
 <!-- List of CSS files that are optimized and appended into one with yui-compressor -->
 <!-- <link rel="stylesheet" href="/static/css/reset.css" /> -->
@@ -26,14 +26,14 @@
 <!-- <link rel="stylesheet" href="/static/css/text.css" /> -->
 <!-- <link rel="stylesheet" href="/static/css/style.css" /> -->
 
-<link rel="stylesheet" href="/static/allstyles-min.css" />
+<link rel="stylesheet" href="{{.Context.SiteRoot}}/_static/allstyles-min.css" />
 
 <meta name="viewport" content="width=640" />
 
-{{-
+{{/*
 <link rel="search" type="application/opensearchdescription+xml"
       title="Assembly Archive" href="{{ .RootUrl}}/@@osdd.xml" />
--}}
+*/}}
 
 </head>
 <body>
@@ -45,12 +45,7 @@
           <!-- <img tal:attributes="src context/@@layouthelper/static/images/archive-logo.png" alt="Assembly Archive"/> -->
         </a>
       </div>
-      <tal:block tal:condition="python: context.page != view.application">
-        <a id="mobile-logo" tal:attributes="href view/application_url"></a>
-      </tal:block>
-      <tal:block tal:condition="python: context.page == view.application">
-        <a id="mobile-logo"></a>
-      </tal:block>
+      <a id="mobile-logo" tal:attributes="href view/application_url"></a>
 
       <nav class="grid_8 omega">
         <ul tal:replace="structure context/@@yearlynavigation" />
@@ -65,7 +60,7 @@
 
     </header>
 
-    {{template "page-content" .}}
+    {{template "page-contents" .}}
 
 
     <!--

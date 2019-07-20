@@ -204,13 +204,21 @@ type GalleryRenderer struct {
 	Template *template.Template
 }
 
-func load_template(settings *base.SiteSettings, name string, clonable *template.Template) (*template.Template, error) {
+func load_template(
+	settings *base.SiteSettings,
+	name string,
+	filename string,
+	clonable *template.Template) (*template.Template, error) {
 	t := template.New(name)
 	if clonable != nil {
-		t = clonable.New(name)
+		cloned, err := clonable.Clone()
+		if err != nil {
+			return nil, err
+		}
+		t = cloned.New(name)
 	}
 	template_data, data_err := ioutil.ReadFile(
-		path.Join(settings.TemplatesDir, name+".html.tmpl"))
+		path.Join(settings.TemplatesDir, filename))
 	if data_err != nil {
 		return nil, data_err
 	}
@@ -236,31 +244,43 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 
 	var err error
 	{
-		generic, err = load_template(settings, "thumbnails", generic)
+		generic, err = load_template(settings, "thumbnails", "thumbnails.html.tmpl", generic)
 		if err != nil {
 			return templates, err
 		}
 	}
 	{
-		templates.Main, err = load_template(settings, "main", generic)
+		contents := template.Must(
+			load_template(settings, "page-contents", "main.html.tmpl", generic))
+		templates.Main, err = load_template(
+			settings, "main", "layout.html.tmpl", contents)
 		if err != nil {
 			return templates, err
 		}
 	}
 	{
-		templates.Year, err = load_template(settings, "year", generic)
+		contents := template.Must(
+			load_template(settings, "page-contents", "year.html.tmpl", generic))
+		templates.Year, err = load_template(
+			settings, "year", "layout.html.tmpl", contents)
 		if err != nil {
 			return templates, err
 		}
 	}
 	{
-		templates.Section, err = load_template(settings, "section", generic)
+		contents := template.Must(
+			load_template(settings, "page-contents", "section.html.tmpl", generic))
+		templates.Section, err = load_template(
+			settings, "section", "layout.html.tmpl", contents)
 		if err != nil {
 			return templates, err
 		}
 	}
 	{
-		templates.Entry, err = load_template(settings, "entry", generic)
+		contents := template.Must(
+			load_template(settings, "page-contents", "entry.html.tmpl", generic))
+		templates.Entry, err = load_template(
+			settings, "entry", "layout.html.tmpl", contents)
 		if err != nil {
 			return templates, err
 		}

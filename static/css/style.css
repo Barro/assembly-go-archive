@@ -273,7 +273,7 @@ h2 {
   #mobile-logo {
     display: inline-block;
     float: left;
-    background: url(/@@/asm.archive/images/mobile-logo.png) no-repeat;
+    background: url(images/mobile-logo.png) no-repeat;
     width: 96px;
     height: 45px;
     margin-top: 4px;
