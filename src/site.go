@@ -83,9 +83,24 @@ type SectionInfo struct {
 	Next *base.Section
 }
 
+type EntryInfo struct {
+	Year    *base.Year
+	Section *base.Section
+	Prev    *base.EntryInfo
+	Curr    *base.EntryInfo
+	Next    *base.EntryInfo
+}
+
 type SectionContext struct {
 	Year    *base.Year
 	Section SectionInfo
+	Context PageContext
+}
+
+type EntryContext struct {
+	Year    *base.Year
+	Section *base.Section
+	Entry   EntryInfo
 	Context PageContext
 }
 
@@ -245,8 +260,10 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 		}
 	}
 	{
-		t := template.New("entry")
-		templates.Entry = template.Must(t.Parse(data))
+		templates.Entry, err = load_template(settings, "entry", generic)
+		if err != nil {
+			return templates, err
+		}
 	}
 	{
 		t := template.New("description")
@@ -297,7 +314,27 @@ func handle_entry(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	//fmt.Printf("%v %s\n", path_elements, r.URL)
+	entry, err_info := get_entry_info(site, path_elements)
+	if err_info != nil {
+		log.Println(err_info)
+		http.NotFound(w, r)
+		return
+	}
+
+	page_context := PageContext{
+		SiteRoot: site.Settings.SiteRoot,
+	}
+	context := EntryContext{
+		Year:    entry.Year,
+		Section: entry.Section,
+		Entry:   entry,
+		Context: page_context,
+	}
+	err_template := render_template(w, site.Templates.Entry, context)
+	if err_template != nil {
+		server.Ise(w)
+		log.Printf("Internal entry page error: %s", err_template)
+	}
 }
 
 func handle_section(
@@ -362,11 +399,11 @@ func get_section_info(site Site, path_elements map[string]string) (SectionInfo, 
 		return info, year_err
 	}
 	info.Year = year.Curr
-	section_key := path_elements["Section"]
+	key := path_elements["Section"]
 	last_index := 0
 	for i, candidate := range year.Curr.Sections {
 		last_index = i
-		if candidate.Key == section_key {
+		if candidate.Key == key {
 			info.Curr = candidate
 			break
 		}
@@ -374,10 +411,38 @@ func get_section_info(site Site, path_elements map[string]string) (SectionInfo, 
 	}
 	if info.Curr == nil {
 		return info, errors.New(
-			fmt.Sprintf("Section %s not found!", section_key))
+			fmt.Sprintf("Section %s not found!", key))
 	}
 	if last_index+1 < len(year.Curr.Sections) {
 		info.Prev = year.Curr.Sections[last_index+1]
+	}
+	return info, nil
+}
+
+func get_entry_info(site Site, path_elements map[string]string) (EntryInfo, error) {
+	info := EntryInfo{}
+	section, info_err := get_section_info(site, path_elements)
+	if info_err != nil {
+		return info, info_err
+	}
+	info.Year = section.Year
+	info.Section = section.Curr
+	key := path_elements["Entry"]
+	last_index := 0
+	for i, candidate := range section.Curr.Entries {
+		last_index = i
+		if candidate.Key == key {
+			info.Curr = candidate
+			break
+		}
+		info.Next = candidate
+	}
+	if info.Curr == nil {
+		return info, errors.New(
+			fmt.Sprintf("Entry %s not found!", key))
+	}
+	if last_index+1 < len(section.Curr.Entries) {
+		info.Prev = section.Curr.Entries[last_index+1]
 	}
 	return info, nil
 }

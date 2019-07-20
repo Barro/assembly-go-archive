@@ -1,0 +1,48 @@
+{{$ctx := .}}
+{{/* TODO navigaatioon nämä */}}
+{{if .Entry.Next}}
+<a href="{{.Entry.Next.Path}}">{{.Entry.Next.Title}}</a>
+{{end}}
+{{if .Entry.Prev}}
+<a href="{{.Entry.Prev.Path}}">{{.Entry.Prev.Title}}</a>
+{{end}}
+
+<div class="media-item page clearfix">
+  <div id="externalasset-title">
+    <h2>{{.Entry.Curr.Title|html}}</h2>
+  </div>
+  <div class="entry" id="gallery-item">
+    here goes type specific contents
+  </div>
+  <div id="details">
+    {{if .Section.IsRanked}}
+    <p>TODO placement info</p>
+    {{end}}
+    {{if .Entry.Curr.Description}}
+    <p>
+      {{.Entry.Curr.Description}}
+    </p>
+    {{end}}
+    {{if .Entry.Curr.Author}}
+    <p>
+      Author: {{.Entry.Curr.Author|html}}
+    </p>
+    {{end}}
+
+      <div class="download section">
+        <h3 class="section-title">Download</h3>
+        <div>
+          <a href="http://www.scene.org/file.php?file=%2Fparties%2F2018%2Fassembly18%2F64k%2F100__by_macau_exports.rar">Original</a> (<span>www.scene.org</span>)
+        </div>
+      </div>
+
+      <div class="view section">
+        <h3 class="section-title">View on</h3>
+        <div>
+          <a href="http://www.youtube.com/watch?v=Hkv5297SspI">YouTube</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -8,6 +8,7 @@ pkg_tar(
         ":year.html.tmpl",
         ":section.html.tmpl",
         ":entry-metadata.html.tmpl",
+        ":entry.html.tmpl",
     ],
     package_dir = "templates",
     visibility = ["//visibility:public"],
