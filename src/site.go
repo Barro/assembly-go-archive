@@ -41,16 +41,20 @@ type Breadcrumbs struct {
 	Last    InternalLink
 }
 
+type PageNavigation struct {
+	Prev InternalLink
+	Next InternalLink
+}
+
 type PageContext struct {
 	Path        string
 	Breadcrumbs Breadcrumbs
 	Title       string
 	SiteRoot    string
-	Url         string
 	CurrentYear int
 	Description string
 	SiteState   *state.SiteState
-	Navigation  *state.Navigable
+	Navigation  PageNavigation
 }
 
 type GalleryThumbnails struct {
@@ -72,9 +76,9 @@ type MainContext struct {
 }
 
 type YearInfo struct {
-	Prev *base.Year
-	Curr *base.Year
-	Next *base.Year
+	Prev base.Year
+	Curr base.Year
+	Next base.Year
 }
 
 type YearContext struct {
@@ -85,17 +89,17 @@ type YearContext struct {
 
 type SectionInfo struct {
 	Year *base.Year
-	Prev *base.Section
-	Curr *base.Section
-	Next *base.Section
+	Prev base.Section
+	Curr base.Section
+	Next base.Section
 }
 
 type EntryInfo struct {
 	Year    *base.Year
 	Section *base.Section
-	Prev    *base.Entry
-	Curr    *base.Entry
-	Next    *base.Entry
+	Prev    base.Entry
+	Curr    base.Entry
+	Next    base.Entry
 }
 
 type SectionContext struct {
@@ -196,14 +200,27 @@ func peek_section_entries(section base.Section, amount int) []*base.Entry {
 }
 */
 
-func view_author_title(entry base.Entry) string {
+func author_title(entry base.Entry) string {
 	var author_title string
-	if entry.Author == "" {
+	if entry.Title == "" {
+		return ""
+	} else if entry.Author == "" {
 		author_title = entry.Title
 	} else {
 		author_title = entry.Title + " by " + entry.Author
 	}
-	return html.EscapeString(author_title)
+	return author_title
+}
+
+func view_author_title(entry base.Entry) string {
+	return html.EscapeString(author_title(entry))
+}
+
+func view_cut_string(target string, max_length int) string {
+	if len(target) <= max_length {
+		return target
+	}
+	return target[:max_length]
 }
 
 type GalleryRenderer struct {
@@ -240,6 +257,7 @@ func create_base_template(name string) *template.Template {
 	t := template.New(name)
 	functions := template.FuncMap{}
 	functions["view_author_title"] = view_author_title
+	functions["view_cut_string"] = view_cut_string
 	return t.Funcs(functions)
 }
 
@@ -301,23 +319,6 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 	return templates, nil
 }
 
-func NewGalleryTemplate(settings *base.SiteSettings) (*template.Template, error) {
-	ti := template.New("thumbnails")
-	functions := template.FuncMap{}
-	functions["view_author_title"] = view_author_title
-	ti = ti.Funcs(functions)
-	template_data, data_err := ioutil.ReadFile(
-		path.Join(settings.TemplatesDir, "thumbnails.html.tmpl"))
-	if data_err != nil {
-		return nil, data_err
-	}
-	t, template_err := ti.Parse(string(template_data))
-	if template_err != nil {
-		return nil, template_err
-	}
-	return t, nil
-}
-
 func render_template(
 	w http.ResponseWriter,
 	t *template.Template,
@@ -352,7 +353,7 @@ func handle_entry(
 
 	page_context := PageContext{
 		Path:     path_elements[""],
-		Title:    view_author_title(*entry.Curr),
+		Title:    author_title(entry.Curr),
 		SiteRoot: site.Settings.SiteRoot,
 		Breadcrumbs: Breadcrumbs{
 			Parents: []InternalLink{
@@ -364,6 +365,17 @@ func handle_entry(
 					Path:     entry.Section.Path,
 					Contents: entry.Section.Name,
 				},
+			},
+		},
+		CurrentYear: entry.Year.Year,
+		Navigation: PageNavigation{
+			Prev: InternalLink{
+				Path:     entry.Prev.Path,
+				Contents: author_title(entry.Prev),
+			},
+			Next: InternalLink{
+				Path:     entry.Next.Path,
+				Contents: author_title(entry.Next),
 			},
 		},
 	}
@@ -409,6 +421,17 @@ func handle_section(
 				Contents: section.Curr.Name,
 			},
 		},
+		CurrentYear: section.Year.Year,
+		Navigation: PageNavigation{
+			Prev: InternalLink{
+				Path:     section.Prev.Path,
+				Contents: section.Prev.Name,
+			},
+			Next: InternalLink{
+				Path:     section.Next.Path,
+				Contents: section.Next.Name,
+			},
+		},
 	}
 	context := SectionContext{
 		Section: section,
@@ -435,17 +458,17 @@ func get_year_info(site Site, path_elements map[string]string) (YearInfo, error)
 	for i, candidate_year := range site.State.Years {
 		last_index = i
 		if candidate_year.Year == requested_year {
-			info.Curr = candidate_year
+			info.Curr = *candidate_year
 			break
 		}
-		info.Next = candidate_year
+		info.Next = *candidate_year
 	}
-	if info.Curr == nil {
+	if info.Curr.Key == "" {
 		return info, errors.New(
 			fmt.Sprintf("Year %s not found!", path_elements["Year"]))
 	}
 	if last_index+1 < len(site.State.Years) {
-		info.Prev = site.State.Years[last_index+1]
+		info.Prev = *site.State.Years[last_index+1]
 	}
 	return info, nil
 }
@@ -456,23 +479,23 @@ func get_section_info(site Site, path_elements map[string]string) (SectionInfo, 
 	if year_err != nil {
 		return info, year_err
 	}
-	info.Year = year.Curr
+	info.Year = &year.Curr
 	key := path_elements["Section"]
 	last_index := 0
 	for i, candidate := range year.Curr.Sections {
 		last_index = i
 		if candidate.Key == key {
-			info.Curr = candidate
+			info.Curr = *candidate
 			break
 		}
-		info.Next = candidate
+		info.Next = *candidate
 	}
-	if info.Curr == nil {
+	if info.Curr.Key == "" {
 		return info, errors.New(
 			fmt.Sprintf("Section %s not found!", key))
 	}
 	if last_index+1 < len(year.Curr.Sections) {
-		info.Prev = year.Curr.Sections[last_index+1]
+		info.Prev = *year.Curr.Sections[last_index+1]
 	}
 	return info, nil
 }
@@ -484,23 +507,23 @@ func get_entry_info(site Site, path_elements map[string]string) (EntryInfo, erro
 		return info, info_err
 	}
 	info.Year = section.Year
-	info.Section = section.Curr
+	info.Section = &section.Curr
 	key := path_elements["Entry"]
 	last_index := 0
 	for i, candidate := range section.Curr.Entries {
 		last_index = i
 		if candidate.Key == key {
-			info.Curr = candidate
+			info.Curr = *candidate
 			break
 		}
-		info.Next = candidate
+		info.Next = *candidate
 	}
-	if info.Curr == nil {
+	if info.Curr.Key == "" {
 		return info, errors.New(
 			fmt.Sprintf("Entry %s not found!", key))
 	}
 	if last_index+1 < len(section.Curr.Entries) {
-		info.Prev = section.Curr.Entries[last_index+1]
+		info.Prev = *section.Curr.Entries[last_index+1]
 	}
 	return info, nil
 }
@@ -525,6 +548,17 @@ func handle_year(
 			Last: InternalLink{
 				Path:     year.Curr.Path,
 				Contents: year.Curr.Key,
+			},
+		},
+		CurrentYear: year.Curr.Year,
+		Navigation: PageNavigation{
+			Prev: InternalLink{
+				Path:     year.Prev.Path,
+				Contents: year.Prev.Key,
+			},
+			Next: InternalLink{
+				Path:     year.Next.Path,
+				Contents: year.Next.Key,
 			},
 		},
 	}

@@ -1,28 +1,30 @@
 {{if or .Breadcrumbs.Parents .Breadcrumbs.Last.Contents}}
 {{template "breadcrumbs" .Breadcrumbs}}
 {{end}}
-<nav class="navigation clearfix"
-     tal:define="prev view/previous;
-                 next view/next">
+<nav class="navigation clearfix">
 
+  {{if .Navigation.Prev.Contents}}
   <a class="grid_3 left gallery-navigation-link"
      id="gallery-link-prev"
-     tal:condition="prev"
-     tal:attributes="href python:view.url(prev)">
-    &laquo; <span tal:replace="python: view.cut_string(prev.title, 22)" />
+     href="{{.Navigation.Prev.Path}}">
+    &laquo; {{(view_cut_string .Navigation.Prev.Contents 22)|html}}
   </a>
-  <span class="grid_3 left gallery-navigation-link" tal:condition="not: prev">&nbsp;</span>
+  {{else}}
+  <span class="grid_3 left gallery-navigation-link">&nbsp;</span>
+  {{end}}
 
+  <!-- TODO -->
   <div class="hide-mobile">
     <div tal:replace="structure context/@@gallerybreadcrumbs"/>
   </div>
 
-  <a class="grid_3 right gallery-navigation-link"
-     id="gallery-link-next"
-     tal:condition="next"
-     tal:attributes="href python:view.url(next)">
-    <span tal:replace="python: view.cut_string(next.title, 22)" /> &raquo;
+  {{if .Navigation.Next.Contents}}
+  <a class="grid_3 left gallery-navigation-link"
+     id="gallery-link-prev"
+     href="{{.Navigation.Next.Path}}">
+    {{(view_cut_string .Navigation.Next.Contents 22)|html}}&raquo; 
   </a>
-  <span class="grid_3 right gallery-navigation-link" tal:condition="not: next">&nbsp;</span>
-
+  {{else}}
+  <span class="grid_3 left gallery-navigation-link">&nbsp;</span>
+  {{end}}
 </nav>
