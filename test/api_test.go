@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"server"
+	"state"
 	"strconv"
 	"testing"
 )
@@ -37,7 +38,8 @@ func create_site_layout(t *testing.T) *base.SiteSettings {
 
 func do_request(t *testing.T, path string, body io.Reader) (*base.SiteSettings, *http.Response) {
 	settings := create_site_layout(t)
-	renderer := api.Renderer(*settings)
+	state := state.SiteState{}
+	renderer := api.Renderer(*settings, &state)
 	handler := server.StripPrefix("/api/", renderer)
 	url := "http://example.com/api/" + path
 	req := httptest.NewRequest("PUT", url, body)

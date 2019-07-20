@@ -7,5 +7,6 @@ go_test(
         "//src:api",
         "//src:base",
         "//src:server",
+        "//src:state",
     ],
 )

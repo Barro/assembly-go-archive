@@ -13,6 +13,7 @@ go_library(
     srcs = ["state.go"],
     importpath = "state",
     deps = [":base"],
+    visibility = ["//test:__subpackages__"],
 )
 
 go_library(
