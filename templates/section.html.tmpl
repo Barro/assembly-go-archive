@@ -1,1 +1,17 @@
-<!-- näytä selostus ja tuotokset järjestyksessä -->
+{{$ctx := .}}
+{{/* TODO navigaatioon nämä */}}
+{{if .Section.Next}}
+<a href="{{.Section.Next.Path}}">{{.Section.Next.Name}}</a>
+{{end}}
+{{if .Section.Prev}}
+<a href="{{.Section.Prev.Path}}">{{.Section.Prev.Name}}</a>
+{{end}}
+
+<div class="item-description">
+{{/* No |html escape in here*/}}
+<p>{{.Section.Curr.Description}}</p>
+</div>
+
+<div class="media-index page clearfix">
+  {{template "thumbnails" .Section.Curr.Entries}}
+</div>

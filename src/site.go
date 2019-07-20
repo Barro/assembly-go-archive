@@ -64,12 +64,29 @@ type MainContext struct {
 	Context     PageContext
 }
 
+type YearInfo struct {
+	Prev *base.Year
+	Curr *base.Year
+	Next *base.Year
+}
+
 type YearContext struct {
-	Year      *base.Year
-	NextYear  *base.Year
-	PrevYear  *base.Year
+	Year      YearInfo
 	Galleries []GalleryThumbnails
 	Context   PageContext
+}
+
+type SectionInfo struct {
+	Year *base.Year
+	Prev *base.Section
+	Curr *base.Section
+	Next *base.Section
+}
+
+type SectionContext struct {
+	Year    *base.Year
+	Section SectionInfo
+	Context PageContext
 }
 
 func in_array(array []*base.EntryInfo, entry *base.EntryInfo) bool {
@@ -222,8 +239,10 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 		}
 	}
 	{
-		t := template.New("section")
-		templates.Section = template.Must(t.Parse(data))
+		templates.Section, err = load_template(settings, "section", generic)
+		if err != nil {
+			return templates, err
+		}
 	}
 	{
 		t := template.New("entry")
@@ -286,7 +305,81 @@ func handle_section(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	//fmt.Printf("%v %s\n", path_elements, r.URL)
+	section, err_info := get_section_info(site, path_elements)
+	if err_info != nil {
+		log.Println(err_info)
+		http.NotFound(w, r)
+		return
+	}
+
+	page_context := PageContext{
+		SiteRoot: site.Settings.SiteRoot,
+	}
+	context := SectionContext{
+		Section: section,
+		Context: page_context,
+	}
+	err_template := render_template(w, site.Templates.Section, context)
+	if err_template != nil {
+		server.Ise(w)
+		log.Printf("Internal main page error: %s", err_template)
+	}
+}
+
+func get_year_info(site Site, path_elements map[string]string) (YearInfo, error) {
+	info := YearInfo{}
+	requested_year, year_err := strconv.Atoi(path_elements["Year"])
+	if year_err != nil {
+		return info, errors.New(
+			fmt.Sprintf(
+				"Invalid requested year: %s: %s",
+				path_elements["Year"],
+				year_err))
+	}
+	last_index := 0
+	for i, candidate_year := range site.State.Years {
+		last_index = i
+		if candidate_year.Year == requested_year {
+			info.Curr = candidate_year
+			break
+		}
+		info.Next = candidate_year
+	}
+	if info.Curr == nil {
+		return info, errors.New(
+			fmt.Sprintf("Year %s not found!", path_elements["Year"]))
+	}
+	if last_index+1 < len(site.State.Years) {
+		info.Prev = site.State.Years[last_index+1]
+	}
+	return info, nil
+}
+
+func get_section_info(site Site, path_elements map[string]string) (SectionInfo, error) {
+	info := SectionInfo{}
+	year, year_err := get_year_info(site, path_elements)
+	if year_err != nil {
+		return info, year_err
+	}
+	info.Year = year.Curr
+	section_key := path_elements["Section"]
+	last_index := 0
+	for i, candidate := range year.Curr.Sections {
+		last_index = i
+		if candidate.Key == section_key {
+			info.Curr = candidate
+			break
+		}
+		info.Next = candidate
+	}
+	if info.Curr == nil {
+		return info, errors.New(
+			fmt.Sprintf("Section %s not found!", section_key))
+	}
+	if last_index+1 < len(year.Curr.Sections) {
+		info.Prev = year.Curr.Sections[last_index+1]
+	}
+	return info, nil
 }
 
 func handle_year(
@@ -294,39 +387,19 @@ func handle_year(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	requested_year, year_err := strconv.Atoi(path_elements["Year"])
-	if year_err != nil {
-		log.Printf(
-			"Invalid requested year: %s: %s", path_elements["Year"], year_err)
+	year, err_info := get_year_info(site, path_elements)
+	if err_info != nil {
+		log.Println(err_info)
 		http.NotFound(w, r)
 		return
-	}
-	var next_year *base.Year
-	var year *base.Year
-	var prev_year *base.Year
-	last_index := 0
-	for i, candidate_year := range site.State.Years {
-		last_index = i
-		if candidate_year.Year == requested_year {
-			year = candidate_year
-			break
-		}
-		next_year = candidate_year
-	}
-	if year == nil {
-		http.NotFound(w, r)
-		return
-	}
-	if last_index+1 < len(site.State.Years) {
-		prev_year = site.State.Years[last_index+1]
 	}
 
 	page_context := PageContext{
 		SiteRoot: site.Settings.SiteRoot,
 	}
 
-	gallery_thumbnails := make([]GalleryThumbnails, len(year.Sections))
-	for i, section := range year.Sections {
+	gallery_thumbnails := make([]GalleryThumbnails, len(year.Curr.Sections))
+	for i, section := range year.Curr.Sections {
 		thumbnails := GalleryThumbnails{
 			Path:    section.Path,
 			Title:   section.Name,
@@ -337,8 +410,6 @@ func handle_year(
 	context := YearContext{
 		Galleries: gallery_thumbnails,
 		Year:      year,
-		NextYear:  next_year,
-		PrevYear:  prev_year,
 		Context:   page_context,
 	}
 	err_template := render_template(w, site.Templates.Year, context)
