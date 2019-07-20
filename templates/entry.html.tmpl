@@ -1,14 +1,4 @@
 {{template "navbar" .Context}}
-
-{{$ctx := .}}
-{{/* TODO navigaatioon nämä */}}
-{{if .Entry.Next}}
-<a href="{{.Entry.Next.Path}}">{{.Entry.Next.Title}}</a>
-{{end}}
-{{if .Entry.Prev}}
-<a href="{{.Entry.Prev.Path}}">{{.Entry.Prev.Title}}</a>
-{{end}}
-
 <div class="media-item page clearfix">
   <div id="externalasset-title">
     <h2>{{.Entry.Curr.Title|html}}</h2>

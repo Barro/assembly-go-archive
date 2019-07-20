@@ -1,15 +1,6 @@
 {{template "navbar" .Context}}
 
 {{/* . is type of []*site.YearContext */}}
-{{$ctx := .}}
-
-{{/* TODO navigaatioon nämä */}}
-{{if $ctx.Year.Next}}
-<a href="{{$ctx.Year.Next.Path}}">{{$ctx.Year.Next.Key}}</a>
-{{end}}
-{{if $ctx.Year.Prev}}
-<a href="{{$ctx.Year.Prev.Path}}">{{$ctx.Year.Prev.Key}}</a>
-{{end}}
 
 {{range $index, $element := .Galleries}}
 <div class="mediacategory">

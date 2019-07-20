@@ -593,7 +593,8 @@ func _create_year_range_link(
 	}
 	if len(years) == 1 {
 		return InternalLink{
-			Path:     fmt.Sprintf("/?y=%d-%d", years[0].Year, years[0].Year),
+			Path: fmt.Sprintf(
+				"%s/?y=%d-%d", site.Settings.SiteRoot, years[0].Year, years[0].Year),
 			Contents: fmt.Sprintf("%d", years[0].Year),
 		}
 	}
@@ -601,12 +602,14 @@ func _create_year_range_link(
 	years_last := years[0]
 	if years_last == latest_year {
 		return InternalLink{
-			Path:     "/",
-			Contents: fmt.Sprintf("%d-%d", years_first.Year, years_last.Year),
+			Path: fmt.Sprintf("%s/", site.Settings.SiteRoot),
+			Contents: fmt.Sprintf(
+				"%d-%d", years_first.Year, years_last.Year),
 		}
 	}
 	return InternalLink{
-		Path:     fmt.Sprintf("/?y=%d-%d", years_first.Year, years_last.Year),
+		Path: fmt.Sprintf(
+			"%s/?y=%d-%d", site.Settings.SiteRoot, years_first.Year, years_last.Year),
 		Contents: fmt.Sprintf("%d-%d", years_first.Year, years_last.Year),
 	}
 }
@@ -695,6 +698,17 @@ func handle_main(
 	page_context := PageContext{
 		Path:     path_elements[""],
 		SiteRoot: site.Settings.SiteRoot,
+		Navigation: PageNavigation{
+			Prev: *years_after,
+			Next: *years_before,
+		},
+		Breadcrumbs: Breadcrumbs{
+			Last: InternalLink{
+				Path: "",
+				Contents: fmt.Sprintf(
+					"%d-%d", years[len(years)-1].Year, years[0].Year),
+			},
+		},
 	}
 	context := MainContext{
 		Galleries:   gallery_thumbnails,
