@@ -1,6 +1,7 @@
 package base
 
 type SiteSettings struct {
+	SiteRoot     string
 	DataDir      string
 	StaticDir    string
 	TemplatesDir string

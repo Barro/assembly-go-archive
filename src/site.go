@@ -38,7 +38,7 @@ type Site struct {
 
 type PageContext struct {
 	Title       string
-	RootUrl     string
+	SiteRoot    string
 	Url         string
 	CurrentYear int
 	Description string
@@ -274,21 +274,28 @@ func handle_year(
 	// fmt.Printf("year %v %s\n", path_elements, r.URL)
 }
 
-func _create_year_range_link(years []*base.Year) InternalLink {
-	if len(years) > 1 {
-		years_first := years[len(years)-1]
-		years_last := years[0]
+func _create_year_range_link(years []*base.Year, latest_year *base.Year) InternalLink {
+	if len(years) == 0 {
+		return InternalLink{}
+	}
+	if len(years) == 1 {
 		return InternalLink{
-			Path:     fmt.Sprintf("?y=%d-%d", years_first.Year, years_last.Year),
-			Contents: fmt.Sprintf("%d-%d", years_first.Year, years_last.Year),
-		}
-	} else if len(years) == 1 {
-		return InternalLink{
-			Path:     fmt.Sprintf("?y=%d-%d", years[0].Year, years[0].Year),
+			Path:     fmt.Sprintf("/?y=%d-%d", years[0].Year, years[0].Year),
 			Contents: fmt.Sprintf("%d", years[0].Year),
 		}
 	}
-	return InternalLink{}
+	years_first := years[len(years)-1]
+	years_last := years[0]
+	if years_last == latest_year {
+		return InternalLink{
+			Path:     "/",
+			Contents: fmt.Sprintf("%d-%d", years_first.Year, years_last.Year),
+		}
+	}
+	return InternalLink{
+		Path:     fmt.Sprintf("/?y=%d-%d", years_first.Year, years_last.Year),
+		Contents: fmt.Sprintf("%d-%d", years_first.Year, years_last.Year),
+	}
 }
 
 func _read_year_range(
@@ -343,8 +350,12 @@ func _read_year_range(
 		}
 	}
 
-	link_before := _create_year_range_link(years_before)
-	link_after := _create_year_range_link(years_after)
+	var latest_year *base.Year
+	if len(site.State.Years) > 0 {
+		latest_year = site.State.Years[0]
+	}
+	link_before := _create_year_range_link(years_before, latest_year)
+	link_after := _create_year_range_link(years_after, latest_year)
 	return years, &link_before, &link_after, nil
 }
 
@@ -368,7 +379,9 @@ func handle_main(
 			Entries: random_select_entries(year, MAX_MAIN_ENTRIES),
 		}
 	}
-	page_context := PageContext{}
+	page_context := PageContext{
+		SiteRoot: site.Settings.SiteRoot,
+	}
 	context := MainContext{
 		Galleries:   gallery_thumbnails,
 		YearsBefore: *years_before,

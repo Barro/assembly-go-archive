@@ -134,12 +134,12 @@ func adjust_paths(years []*base.Year) {
 	}
 }
 
-func seed_site_state() state.SiteState {
+func seed_site_state(site_root string) state.SiteState {
 	var years []*base.Year
 	for i := 2030; i >= 1990; i-- {
 		new_year := base.Year{
 			Year: i,
-			Path: "/" + strconv.Itoa(i) + "/",
+			Path: site_root + "/" + strconv.Itoa(i) + "/",
 			Key:  strconv.Itoa(i),
 			Name: strconv.Itoa(i),
 		}
@@ -166,18 +166,22 @@ func main() {
 	flag.Parse()
 
 	settings := base.SiteSettings{
+		SiteRoot:     "",
 		DataDir:      *data_dir,
 		StaticDir:    *static_dir,
 		TemplatesDir: *templates_dir,
 	}
-	state := seed_site_state()
 
 	if *devmode {
 		log.Println("Development mode enabled. DO NOT USE THIS IN PUBLIC! /exit is enabled!")
+		settings.SiteRoot = "/site"
 		http.HandleFunc("/exit/", exit)
 	} else {
 		http.HandleFunc("/exit/", exit_forbidden)
 	}
+
+	state := seed_site_state(settings.SiteRoot)
+
 	http.HandleFunc("/api/", server.StripPrefix("/api/",
 		server.BasicAuth(*authfile, api.Renderer(settings, &state))))
 	http.HandleFunc("/site/", server.StripPrefix("/site/",
