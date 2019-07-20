@@ -94,6 +94,8 @@ func random_select_entries(year *base.Year, amount int) []*base.EntryInfo {
 		index := index_value % total_sections
 		entries := year.Sections[index].Entries
 		entry := entries[rand.Intn(len(entries))]
+		// Technically it's possible that we only get 1
+		// entry/section. That's not a problem.
 		if in_array(result, entry) {
 			continue
 		}
@@ -317,7 +319,7 @@ func _read_year_range(
 	} else if len(site.State.Years) > 0 {
 		// Years array is sorted in the reverse order.
 		year_end = site.State.Years[0].Year
-		year_start = year_start + DEFAULT_MAIN_YEARS
+		year_start = year_end - DEFAULT_MAIN_YEARS
 	}
 	max_year := year_end + 1 + DEFAULT_MAIN_YEARS
 	min_year := year_start - 1 - DEFAULT_MAIN_YEARS
@@ -351,7 +353,7 @@ func handle_main(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	fmt.Printf("main %v %s\n", path_elements, r.URL)
+	//fmt.Printf("main %v %s\n", path_elements, r.URL)
 	years, years_before, years_after, err_year_range := _read_year_range(site, r)
 	if err_year_range != nil {
 		_bad_request(w)

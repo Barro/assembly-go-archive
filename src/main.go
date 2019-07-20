@@ -11,6 +11,7 @@ import (
 	"server"
 	"site"
 	"state"
+	"strconv"
 )
 
 func RenderTeapot(w http.ResponseWriter, r *http.Request) {
@@ -51,10 +52,10 @@ func exit(w http.ResponseWriter, r *http.Request) {
 	os.Exit(0)
 }
 
-func seed_site_state() state.SiteState {
+func create_sections(year base.Year) []*base.Section {
 	entry := base.EntryInfo{
-		Path:          "/2018/section/entry/",
-		Key:           "key",
+		Path:          "/2018/section/entry",
+		Key:           "entry",
 		Title:         "title",
 		Author:        "author",
 		Asset:         "asset",
@@ -73,13 +74,14 @@ func seed_site_state() state.SiteState {
 			Extra: []base.TypedThumbnails{},
 		},
 	}
+
+	var sections []*base.Section
 	section_ranked := base.Section{
 		Path:        "/2018/section-ranked/",
 		Key:         "section-ranked",
 		Name:        "Section ranked",
 		Description: "Here is a decent ranked description!",
 		IsRanked:    true,
-		Entries:     []*base.EntryInfo{&entry, &entry, &entry, &entry, &entry, &entry},
 	}
 	section_unranked := base.Section{
 		Path:        "/2018/section-unranked/",
@@ -87,18 +89,67 @@ func seed_site_state() state.SiteState {
 		Name:        "Section unranked",
 		Description: "Here is a decent unranked description!",
 		IsRanked:    false,
-		Entries:     []*base.EntryInfo{&entry, &entry, &entry, &entry, &entry, &entry},
 	}
-	year := base.Year{
-		Year:     2018,
-		Path:     "/2018/",
-		Key:      "2018",
-		Name:     "2018",
-		Sections: []*base.Section{&section_ranked, &section_unranked},
+	for i := 0; i < 25; i++ {
+		new_section_ranked := section_ranked
+		new_section_ranked.Key = new_section_ranked.Key + "-" + strconv.Itoa(i)
+		var entries_ranked []*base.EntryInfo
+		for i := 0; i < 20; i++ {
+			new_entry := entry
+			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
+			new_entry.Title = new_entry.Title + "-" + strconv.Itoa(i)
+			entries_ranked = append(entries_ranked, &new_entry)
+		}
+		new_section_ranked.Entries = entries_ranked
+		sections = append(sections, &new_section_ranked)
+
+		new_section_unranked := section_unranked
+		new_section_unranked.Key = new_section_unranked.Key + "-" + strconv.Itoa(i)
+		copy(new_section_unranked.Entries, section_unranked.Entries)
+		var entries_unranked []*base.EntryInfo
+		for i := 0; i < 20; i++ {
+			new_entry := entry
+			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
+			new_entry.Title = new_entry.Title + "-" + strconv.Itoa(i)
+			entries_unranked = append(entries_unranked, &new_entry)
+		}
+		new_section_unranked.Entries = entries_unranked
+		sections = append(sections, &new_section_unranked)
+	}
+	return sections
+}
+
+func adjust_paths(years []*base.Year) {
+	for _, year := range years {
+		for _, section := range year.Sections {
+			section.Path = year.Path + section.Key + "/"
+			new_entries := section.Entries
+			section.Entries = new_entries
+			for i, entry := range section.Entries {
+				new_entry := *entry
+				new_entry.Path = section.Path + new_entry.Key + "/"
+				section.Entries[i] = &new_entry
+			}
+		}
+	}
+}
+
+func seed_site_state() state.SiteState {
+	var years []*base.Year
+	for i := 2030; i >= 1990; i-- {
+		new_year := base.Year{
+			Year: i,
+			Path: "/" + strconv.Itoa(i) + "/",
+			Key:  strconv.Itoa(i),
+			Name: strconv.Itoa(i),
+		}
+		new_year.Sections = create_sections(new_year)
+		years = append(years, &new_year)
 	}
 	state := state.SiteState{
-		Years: []*base.Year{&year},
+		Years: years,
 	}
+	adjust_paths(state.Years)
 	return state
 }
 
