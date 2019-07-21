@@ -12,6 +12,7 @@ pkg_tar(
         ":section.html.tmpl",
         ":thumbnails.html.tmpl",
         ":year.html.tmpl",
+        ":yearlynavigation.html.tmpl",
     ],
     package_dir = "templates",
     visibility = ["//visibility:public"],

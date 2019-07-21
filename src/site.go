@@ -36,6 +36,11 @@ type Site struct {
 	Templates *SiteTemplates
 }
 
+type YearlyNavigation struct {
+	Years   []InternalLink
+	Current *InternalLink
+}
+
 type Breadcrumbs struct {
 	Parents []InternalLink
 	Last    InternalLink
@@ -47,14 +52,15 @@ type PageNavigation struct {
 }
 
 type PageContext struct {
-	Path        string
-	Breadcrumbs Breadcrumbs
-	Title       string
-	SiteRoot    string
-	CurrentYear int
-	Description string
-	SiteState   *state.SiteState
-	Navigation  PageNavigation
+	Path             string
+	Breadcrumbs      Breadcrumbs
+	Title            string
+	SiteRoot         string
+	CurrentYear      int
+	Description      string
+	SiteState        *state.SiteState
+	Navigation       PageNavigation
+	YearlyNavigation YearlyNavigation
 }
 
 type GalleryThumbnails struct {
@@ -66,6 +72,7 @@ type GalleryThumbnails struct {
 type InternalLink struct {
 	Path     string
 	Contents string
+	Title    string
 }
 
 type MainContext struct {
@@ -223,6 +230,13 @@ func view_cut_string(target string, max_length int) string {
 	return target[:max_length]
 }
 
+func view_attribute(name string, value string) string {
+	if len(value) == 0 {
+		return ""
+	}
+	return name + "=\"" + html.EscapeString(value) + "\""
+}
+
 type GalleryRenderer struct {
 	Settings *base.SiteSettings
 	Template *template.Template
@@ -258,6 +272,7 @@ func create_base_template(name string) *template.Template {
 	functions := template.FuncMap{}
 	functions["view_author_title"] = view_author_title
 	functions["view_cut_string"] = view_cut_string
+	functions["view_attribute"] = view_attribute
 	return t.Funcs(functions)
 }
 
@@ -275,6 +290,8 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 			load_template(settings, "breadcrumbs", "breadcrumbs.html.tmpl", generic))
 		generic = template.Must(
 			load_template(settings, "navbar", "navbar.html.tmpl", generic))
+		generic = template.Must(
+			load_template(settings, "yearlynavigation", "yearlynavigation.html.tmpl", generic))
 	}
 	{
 		contents := template.Must(
@@ -364,6 +381,7 @@ func handle_entry(
 				InternalLink{
 					Path:     entry.Section.Path,
 					Contents: entry.Section.Name,
+					Title:    entry.Section.Name,
 				},
 			},
 		},
@@ -372,10 +390,12 @@ func handle_entry(
 			Prev: InternalLink{
 				Path:     entry.Prev.Path,
 				Contents: author_title(entry.Prev),
+				Title:    author_title(entry.Prev),
 			},
 			Next: InternalLink{
 				Path:     entry.Next.Path,
 				Contents: author_title(entry.Next),
+				Title:    author_title(entry.Next),
 			},
 		},
 	}
@@ -419,6 +439,7 @@ func handle_section(
 			Last: InternalLink{
 				Path:     section.Curr.Path,
 				Contents: section.Curr.Name,
+				Title:    section.Curr.Name,
 			},
 		},
 		CurrentYear: section.Year.Year,
@@ -426,10 +447,12 @@ func handle_section(
 			Prev: InternalLink{
 				Path:     section.Prev.Path,
 				Contents: section.Prev.Name,
+				Title:    section.Prev.Name,
 			},
 			Next: InternalLink{
 				Path:     section.Next.Path,
 				Contents: section.Next.Name,
+				Title:    section.Next.Name,
 			},
 		},
 	}

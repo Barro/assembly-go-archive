@@ -1,0 +1,28 @@
+<nav class="mobile-breadcrumbs hide-desktop">
+  {{if or .Breadcrumbs.Parents .Breadcrumbs.Last.Contents}}
+  {{template "breadcrumbs" .Breadcrumbs}}
+  {{end}}
+</nav>
+
+<ul class="year_nav hide-mobile" tal:condition="python: len(view.years) > 0"
+    tal:define="visible_years_initial python:view.list_years_near_current_page(7, 3);
+                has_larger_years python: len(view.years) and view.years[0] != visible_years_initial[0]['year'];
+                has_smaller_years python: len(view.years) and view.years[-1] != visible_years_initial[-1]['year'];
+                visible_years_count python: 7 + 1 - (has_larger_years and 1 or 0) + 1 - (has_smaller_years and 1 or 0);
+                visible_years python:view.list_years_near_current_page(visible_years_count, 3)">
+  <!-- XXX We have a bug here in mobile mode if the first year has hide-mobile
+       class and this is not shown => no navigation to left. -->
+  <li tal:condition="python:has_larger_years"
+      class="prev-years">
+    <a tal:attributes="href python:view.url(visible_years[0]['year'])">&laquo;</a>
+  </li>
+  <li tal:repeat="year_data visible_years"
+      tal:attributes="class python: year_data['year'] == view.get_closest_year() and 'active' or
+                                    (year_data['remove'] and 'hide-mobile' or None)">
+    <a tal:attributes="href python: year_data['year'] != context.page and view.url(year_data['year']) or None">'<span tal:replace="python: year_data['year'].page.__name__[2:]" /></a>
+  </li>
+  <li tal:condition="has_smaller_years" class="next-years">
+    <a tal:attributes="href python:view.url(visible_years[-1]['year'])">&raquo;</a>
+  </li>
+</ul>
+

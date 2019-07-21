@@ -4,12 +4,12 @@
   {{if $index}}
   &raquo;
   {{end}}
-  <a href="{{.Path}}">{{.Contents|html}}</a>
+  <a href="{{.Path}}" {{view_attribute "title" .Title}}>{{.Contents|html}}</a>
   {{end}} {{/*range $index, $page := .*/}}
   {{if $ctx.Last.Contents}}
   {{if .Parents}}
   &raquo;
   {{end}}
-  {{$ctx.Last.Contents}}
+  <span {{view_attribute "title" $ctx.Last.Title}}>{{$ctx.Last.Contents|html}}</span>
   {{end}}
 </h2>

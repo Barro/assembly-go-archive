@@ -3,6 +3,7 @@
   {{if .Navigation.Next.Contents}}
   <a class="grid_3 left gallery-navigation-link"
      id="gallery-link-next"
+     {{view_attribute "title" .Navigation.Next.Title}}
      href="{{.Navigation.Next.Path}}">
     &laquo; {{(view_cut_string .Navigation.Next.Contents 22)|html}}
   </a>
@@ -19,6 +20,7 @@
   {{if .Navigation.Prev.Contents}}
   <a class="grid_3 right gallery-navigation-link"
      id="gallery-link-prev"
+     {{view_attribute "title" .Navigation.Prev.Title}}
      href="{{.Navigation.Prev.Path}}">
     {{(view_cut_string .Navigation.Prev.Contents 22)|html}} &raquo;
   </a>

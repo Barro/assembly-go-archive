@@ -50,7 +50,7 @@
       </div>
 
       <nav class="grid_8 omega">
-        <ul tal:replace="structure context/@@yearlynavigation" />
+        {{template "yearlynavigation" .Context}}
       </nav>
 
       <!--
