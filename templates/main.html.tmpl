@@ -14,9 +14,3 @@
   </div>
 </div>
 {{end}} {{/* range $index, $element := .Galleries */}}
-{{if $ctx.YearsBefore.Contents}}
-<a href="{{$ctx.Context.SiteRoot}}{{$ctx.YearsBefore.Path}}">{{$ctx.YearsBefore.Contents|html}}</a>
-{{end}}
-{{if $ctx.YearsAfter.Contents}}
-<a href="{{$ctx.Context.SiteRoot}}{{$ctx.YearsAfter.Path}}">{{$ctx.YearsAfter.Contents|html}}</a>
-{{end}}

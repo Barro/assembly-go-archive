@@ -124,12 +124,12 @@ func create_sections(site_root string, year base.Year) []*base.Section {
 func adjust_paths(years []*base.Year) {
 	for _, year := range years {
 		for _, section := range year.Sections {
-			section.Path = year.Path + section.Key + "/"
+			section.Path = year.Path + "/" + section.Key
 			new_entries := section.Entries
 			section.Entries = new_entries
 			for i, entry := range section.Entries {
 				new_entry := *entry
-				new_entry.Path = section.Path + new_entry.Key + "/"
+				new_entry.Path = section.Path + "/" + new_entry.Key
 				section.Entries[i] = &new_entry
 			}
 		}
@@ -141,7 +141,7 @@ func seed_site_state(site_root string) state.SiteState {
 	for i := 2030; i >= 1990; i-- {
 		new_year := base.Year{
 			Year: i,
-			Path: site_root + "/" + strconv.Itoa(i) + "/",
+			Path: site_root + "/" + strconv.Itoa(i),
 			Key:  strconv.Itoa(i),
 			Name: strconv.Itoa(i),
 		}
