@@ -4,10 +4,11 @@ load(":static.bzl", "yui_minified", "zopflipng_minified")
 yui_minified(
     name = "allstyles-min.css",
     srcs = [
-        "css/960.css",
+        # Order here matters!
         "css/reset.css",
-        "css/style.css",
+        "css/960.css",
         "css/text.css",
+        "css/style.css",
     ],
 )
 

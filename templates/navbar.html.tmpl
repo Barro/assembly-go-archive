@@ -1,30 +1,29 @@
-{{if or .Breadcrumbs.Parents .Breadcrumbs.Last.Contents}}
-{{template "breadcrumbs" .Breadcrumbs}}
-{{end}}
 <nav class="navigation clearfix">
-
-  {{if .Navigation.Prev.Contents}}
-  <a class="grid_3 left gallery-navigation-link"
-     id="gallery-link-prev"
-     href="{{.Navigation.Prev.Path}}">
-    &laquo; {{(view_cut_string .Navigation.Prev.Contents 22)|html}}
-  </a>
-  {{else}}
-  <span class="grid_3 left gallery-navigation-link">&nbsp;</span>
-  {{end}}
-
-  <!-- TODO -->
-  <div class="hide-mobile">
-    <div tal:replace="structure context/@@gallerybreadcrumbs"/>
-  </div>
 
   {{if .Navigation.Next.Contents}}
   <a class="grid_3 left gallery-navigation-link"
-     id="gallery-link-prev"
+     id="gallery-link-next"
      href="{{.Navigation.Next.Path}}">
-    {{(view_cut_string .Navigation.Next.Contents 22)|html}}&raquo; 
+    &laquo; {{(view_cut_string .Navigation.Next.Contents 22)|html}}
   </a>
   {{else}}
   <span class="grid_3 left gallery-navigation-link">&nbsp;</span>
   {{end}}
+
+  <div class="hide-mobile">
+    {{if or .Breadcrumbs.Parents .Breadcrumbs.Last.Contents}}
+    {{template "breadcrumbs" .Breadcrumbs}}
+    {{end}}
+  </div>
+
+  {{if .Navigation.Prev.Contents}}
+  <a class="grid_3 right gallery-navigation-link"
+     id="gallery-link-prev"
+     href="{{.Navigation.Prev.Path}}">
+    {{(view_cut_string .Navigation.Prev.Contents 22)|html}} &raquo;
+  </a>
+  {{else}}
+  <span class="grid_3 left gallery-navigation-link">&nbsp;</span>
+  {{end}}
+
 </nav>
