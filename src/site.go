@@ -793,8 +793,8 @@ func handle_main(
 		Path:     path_elements[""],
 		SiteRoot: site.Settings.SiteRoot,
 		Navigation: PageNavigation{
-			Prev: *years_after,
-			Next: *years_before,
+			Prev: *years_before,
+			Next: *years_after,
 		},
 		Breadcrumbs: Breadcrumbs{
 			Last: InternalLink{
