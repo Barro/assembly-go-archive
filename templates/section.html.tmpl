@@ -6,5 +6,7 @@
 </div>
 
 <div class="media-index page clearfix">
-  {{template "thumbnails" .Section.Curr.Entries}}
+  {{template "thumbnails" .DisplayEntries}}
 </div>
+
+{{template "navbar" (mod_context_replace_navigation .Context .OffsetNavigation)|mod_context_no_breadcrumbs}}

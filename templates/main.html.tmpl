@@ -14,3 +14,5 @@
   </div>
 </div>
 {{end}} {{/* range $index, $element := .Galleries */}}
+
+{{template "navbar" .Context|mod_context_no_breadcrumbs}}

@@ -12,9 +12,7 @@
   {{end}}
 
   <div class="hide-mobile">
-    {{if or .Breadcrumbs.Parents .Breadcrumbs.Last.Contents}}
     {{template "breadcrumbs" .Breadcrumbs}}
-    {{end}}
   </div>
 
   {{if .Navigation.Prev.Contents}}

@@ -19,6 +19,7 @@ import (
 )
 
 var DEFAULT_MAIN_YEARS = 15
+var MAX_SECTION_DISPLAY_ENTRIES = 30
 var MAX_PREVIEW_ENTRIES = 5
 var MAX_MAIN_SECTION_ENTRIES = 2
 
@@ -110,9 +111,11 @@ type EntryInfo struct {
 }
 
 type SectionContext struct {
-	Year    *base.Year
-	Section SectionInfo
-	Context PageContext
+	Year             *base.Year
+	Section          SectionInfo
+	DisplayEntries   []*base.Entry
+	OffsetNavigation PageNavigation
+	Context          PageContext
 }
 
 type EntryContext struct {
@@ -237,6 +240,18 @@ func view_attribute(name string, value string) string {
 	return name + "=\"" + html.EscapeString(value) + "\""
 }
 
+func mod_context_no_breadcrumbs(context PageContext) PageContext {
+	no_breadcrumbs := context
+	no_breadcrumbs.Breadcrumbs = Breadcrumbs{}
+	return no_breadcrumbs
+}
+
+func mod_context_replace_navigation(context PageContext, navigation PageNavigation) PageContext {
+	replaced := context
+	replaced.Navigation = navigation
+	return replaced
+}
+
 type GalleryRenderer struct {
 	Settings *base.SiteSettings
 	Template *template.Template
@@ -273,6 +288,8 @@ func create_base_template(name string) *template.Template {
 	functions["view_author_title"] = view_author_title
 	functions["view_cut_string"] = view_cut_string
 	functions["view_attribute"] = view_attribute
+	functions["mod_context_no_breadcrumbs"] = mod_context_no_breadcrumbs
+	functions["mod_context_replace_navigation"] = mod_context_replace_navigation
 	return t.Funcs(functions)
 }
 
@@ -424,6 +441,58 @@ func handle_section(
 		return
 	}
 
+	offset_str := string(r.FormValue("offset"))
+	if offset_str == "" {
+		offset_str = "0"
+	}
+	offset, err_offset := strconv.Atoi(offset_str)
+	if err_offset != nil {
+		log.Println(err_offset)
+		offset = 0
+	} else if offset < 0 {
+		offset = 0
+	} else if offset%MAX_SECTION_DISPLAY_ENTRIES != 0 {
+		offset = 0
+	}
+
+	prev_offset := offset - MAX_SECTION_DISPLAY_ENTRIES
+	if prev_offset < 0 {
+		prev_offset = 0
+	}
+	next_offset := offset + MAX_SECTION_DISPLAY_ENTRIES
+
+	var display_entries []*base.Entry
+	total_entries := len(section.Curr.Entries)
+	if total_entries <= MAX_SECTION_DISPLAY_ENTRIES {
+		display_entries = section.Curr.Entries
+	} else {
+		if offset+MAX_SECTION_DISPLAY_ENTRIES < total_entries {
+			display_entries = section.Curr.Entries[offset:(offset + MAX_SECTION_DISPLAY_ENTRIES)]
+		} else if offset < total_entries {
+			display_entries = section.Curr.Entries[offset:total_entries]
+		}
+	}
+	var offset_navigation PageNavigation
+	if (prev_offset == 0 && offset != 0) || prev_offset > 0 {
+		offset_navigation.Next = InternalLink{
+			Contents: "Previous " + strconv.Itoa(MAX_SECTION_DISPLAY_ENTRIES) + " items",
+			Path:     "?offset=" + strconv.Itoa(prev_offset),
+		}
+		if prev_offset == 0 {
+			offset_navigation.Next.Path = site.Settings.SiteRoot + "/" + path_elements[""]
+		}
+	}
+	if next_offset < total_entries {
+		next_entries_count := total_entries - next_offset
+		if MAX_SECTION_DISPLAY_ENTRIES < next_entries_count {
+			next_entries_count = MAX_SECTION_DISPLAY_ENTRIES
+		}
+		offset_navigation.Prev = InternalLink{
+			Contents: "Next " + strconv.Itoa(next_entries_count) + " items",
+			Path:     "?offset=" + strconv.Itoa(next_offset),
+		}
+	}
+
 	title := section.Year.Key + " / " + section.Curr.Name
 	page_context := PageContext{
 		Path:     path_elements[""],
@@ -457,8 +526,10 @@ func handle_section(
 		},
 	}
 	context := SectionContext{
-		Section: section,
-		Context: page_context,
+		DisplayEntries:   display_entries,
+		OffsetNavigation: offset_navigation,
+		Section:          section,
+		Context:          page_context,
 	}
 	err_template := render_template(w, site.Templates.Section, context)
 	if err_template != nil {

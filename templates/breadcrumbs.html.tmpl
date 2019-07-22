@@ -1,15 +1,19 @@
 <h2 class="gallery-breadcrumbs">
+  {{if or .Parents .Last.Contents}}
   {{$ctx := .}}
   {{range $index, $page := .Parents}}
   {{if $index}}
   &raquo;
-  {{end}}
+  {{end}} {{/*{{if $index}}*/}}
   <a href="{{.Path}}" {{view_attribute "title" .Title}}>{{.Contents|html}}</a>
   {{end}} {{/*range $index, $page := .*/}}
   {{if $ctx.Last.Contents}}
   {{if .Parents}}
   &raquo;
-  {{end}}
+  {{end}} {{/*{{if .Parents}}*/}}
   <span {{view_attribute "title" $ctx.Last.Title}}>{{$ctx.Last.Contents|html}}</span>
-  {{end}}
+  {{end}} {{/*{{if $ctx.Last.Contents}}*/}}
+  {{else}}
+  &nbsp;
+  {{end}} {{/*{{if or .Breadcrumbs.Parents .Breadcrumbs.Last.Contents}}*/}}
 </h2>

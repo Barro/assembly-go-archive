@@ -95,7 +95,7 @@ func create_sections(site_root string, year base.Year) []*base.Section {
 		new_section_ranked.Key = new_section_ranked.Key + "-" + strconv.Itoa(i)
 		new_section_ranked.Name = new_section_ranked.Name + " " + strconv.Itoa(i)
 		var entries_ranked []*base.Entry
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 70; i++ {
 			new_entry := entry
 			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
 			new_entry.Title = new_entry.Title + "-" + strconv.Itoa(i)
