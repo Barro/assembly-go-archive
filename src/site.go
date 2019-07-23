@@ -23,6 +23,8 @@ var MAX_SECTION_DISPLAY_ENTRIES = 30
 var MAX_PREVIEW_ENTRIES = 5
 var MAX_MAIN_SECTION_ENTRIES = 2
 
+var YEARLY_NAVIGATION_YEARS = 7
+
 type SiteTemplates struct {
 	Main        *template.Template
 	Year        *template.Template
@@ -38,8 +40,8 @@ type Site struct {
 }
 
 type YearlyNavigation struct {
-	Years   []InternalLink
-	Current *InternalLink
+	Years        []InternalLink
+	CurrentIndex int
 }
 
 type Breadcrumbs struct {
@@ -402,7 +404,8 @@ func handle_entry(
 				},
 			},
 		},
-		CurrentYear: entry.Year.Year,
+		YearlyNavigation: get_yearly_navigation(site, entry.Year.Year),
+		CurrentYear:      entry.Year.Year,
 		Navigation: PageNavigation{
 			Prev: InternalLink{
 				Path:     entry.Prev.Path,
@@ -511,7 +514,8 @@ func handle_section(
 				Title:    section.Curr.Name,
 			},
 		},
-		CurrentYear: section.Year.Year,
+		YearlyNavigation: get_yearly_navigation(site, section.Year.Year),
+		CurrentYear:      section.Year.Year,
 		Navigation: PageNavigation{
 			Prev: InternalLink{
 				Path:     section.Prev.Path,
@@ -622,6 +626,74 @@ func get_entry_info(site Site, path_elements map[string]string) (EntryInfo, erro
 	return info, nil
 }
 
+func get_yearly_navigation(site Site, current_year int) YearlyNavigation {
+	year_max := site.State.Years[0].Year
+	year_min := site.State.Years[len(site.State.Years)-1].Year
+	years_count := len(site.State.Years)
+	highlighted_index := -1
+	if current_year < year_min {
+		highlighted_index = -1
+	} else if year_max < current_year {
+		highlighted_index = -1
+	} else {
+		highlighted_index = year_max - current_year
+	}
+
+	visible_years := YEARLY_NAVIGATION_YEARS
+	if highlighted_index < int(YEARLY_NAVIGATION_YEARS/2)+2 {
+		visible_years++
+	}
+	if years_count-highlighted_index < int(YEARLY_NAVIGATION_YEARS/2)+1 {
+		visible_years++
+	}
+
+	index_first := highlighted_index - visible_years/2
+	if index_first < 0 {
+		index_first = 0
+	}
+	index_last := index_first + visible_years
+	if index_last >= years_count {
+		index_last = years_count
+		index_first = index_last - visible_years
+	}
+	var display_years []InternalLink
+	if 0 < index_first {
+		laquo := InternalLink{
+			Path:     site.State.Years[index_first-1].Path,
+			Contents: "«",
+			Title:    site.State.Years[index_first-1].Key,
+		}
+		display_years = append(display_years, laquo)
+	}
+
+	current_index := -1
+	for i := index_first; i < index_last; i++ {
+		year_link := InternalLink{
+			Path:     site.State.Years[i].Path,
+			Contents: fmt.Sprintf("'%02d", (site.State.Years[i].Year % 100)),
+			Title:    site.State.Years[i].Key,
+		}
+		if i == highlighted_index {
+			current_index = len(display_years)
+		}
+		display_years = append(display_years, year_link)
+	}
+
+	if index_last < years_count {
+		raquo := InternalLink{
+			Path:     site.State.Years[index_last].Path,
+			Contents: "»",
+			Title:    site.State.Years[index_last].Key,
+		}
+		display_years = append(display_years, raquo)
+	}
+
+	return YearlyNavigation{
+		Years:        display_years,
+		CurrentIndex: current_index,
+	}
+}
+
 func handle_year(
 	site Site,
 	path_elements map[string]string,
@@ -644,7 +716,8 @@ func handle_year(
 				Contents: year.Curr.Key,
 			},
 		},
-		CurrentYear: year.Curr.Year,
+		YearlyNavigation: get_yearly_navigation(site, year.Curr.Year),
+		CurrentYear:      year.Curr.Year,
 		Navigation: PageNavigation{
 			Prev: InternalLink{
 				Path:     year.Prev.Path,
@@ -803,6 +876,7 @@ func handle_main(
 					"%d-%d", years[len(years)-1].Year, years[0].Year),
 			},
 		},
+		YearlyNavigation: get_yearly_navigation(site, 0),
 	}
 	context := MainContext{
 		Galleries:   gallery_thumbnails,

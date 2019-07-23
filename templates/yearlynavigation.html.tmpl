@@ -4,6 +4,21 @@
   {{end}}
 </nav>
 
+<ul class="year_nav hide-mobile">
+  {{$ctx := .}}
+  {{range $index, $year_link := .YearlyNavigation.Years}}
+  <li
+    {{if eq $index $ctx.YearlyNavigation.CurrentIndex}}
+    class="active"
+    {{end}}><a href="{{$year_link.Path|html}}"
+         {{view_attribute "title" $year_link.Title}}
+         >{{$year_link.Contents|html}}
+      </a>
+  </li>
+  {{end}}
+</ul>
+{{/*
+TODO hide some years from mobile version
 <ul class="year_nav hide-mobile" tal:condition="python: len(view.years) > 0"
     tal:define="visible_years_initial python:view.list_years_near_current_page(7, 3);
                 has_larger_years python: len(view.years) and view.years[0] != visible_years_initial[0]['year'];
@@ -26,3 +41,4 @@
   </li>
 </ul>
 
+*/}}
