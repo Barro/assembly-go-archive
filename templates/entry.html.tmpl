@@ -21,20 +21,15 @@
     </p>
     {{end}}
 
-      <div class="download section">
-        <h3 class="section-title">Download</h3>
-        <div>
-          <a href="http://www.scene.org/file.php?file=%2Fparties%2F2018%2Fassembly18%2F64k%2F100__by_macau_exports.rar">Original</a> (<span>www.scene.org</span>)
-        </div>
+    {{range $index, $external_link_section := .Entry.Curr.ExternalLinks}}
+    <div class="section">
+      <h3 class="section-title">{{$external_link_section.Name|html}}</h3>
+      <div>
+        {{range $index, $external_link := $external_link_section.Links}}
+        <a href="{{$external_link.Href|html}}">{{$external_link.Contents|html}}</a> {{$external_link.Notes|html}}
+        {{end}}
       </div>
-
-      <div class="view section">
-        <h3 class="section-title">View on</h3>
-        <div>
-          <a href="http://www.youtube.com/watch?v=Hkv5297SspI">YouTube</a>
-        </div>
-      </div>
-
     </div>
+    {{end}}
   </div>
 </div>

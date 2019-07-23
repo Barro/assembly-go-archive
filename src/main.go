@@ -54,13 +54,34 @@ func exit(w http.ResponseWriter, r *http.Request) {
 
 func create_sections(site_root string, year base.Year) []*base.Section {
 	entry := base.Entry{
-		Path:          "/2018/section/entry",
-		Key:           "entry",
-		Title:         "title",
-		Author:        "author",
-		Asset:         "asset",
-		Description:   "description",
-		ExternalLinks: []base.ExternalLinksSection{},
+		Path:        "/2018/section/entry",
+		Key:         "entry",
+		Title:       "title",
+		Author:      "author",
+		Asset:       "asset",
+		Description: "description",
+		ExternalLinks: []base.ExternalLinksSection{
+			base.ExternalLinksSection{
+				Name: "Download",
+				Links: []base.ExternalLink{
+					base.ExternalLink{
+						Href:     "http://media.assembly.org/vod/2015/Compos/2049_Demo_HoldAndModify_by_CNCD__Fairlight.mp4",
+						Contents: "HQ video",
+						Notes:    "(media.assembly.org)",
+					},
+				},
+			},
+			base.ExternalLinksSection{
+				Name: "View on",
+				Links: []base.ExternalLink{
+					base.ExternalLink{
+						Href:     "http://www.youtube.com/watch?v=idOK0JlRhZY",
+						Contents: "Youtube",
+						Notes:    "",
+					},
+				},
+			},
+		},
 		Thumbnails: base.Thumbnails{
 			Default: base.ThumbnailInfo{
 				Path:     site_root + "/_data/2018/music-background.jpeg",

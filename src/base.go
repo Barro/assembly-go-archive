@@ -29,9 +29,15 @@ type Thumbnails struct {
 	Extra   []TypedThumbnails
 }
 
+type ExternalLink struct {
+	Href     string
+	Contents string
+	Notes    string
+}
+
 type ExternalLinksSection struct {
 	Name  string
-	Links []string
+	Links []ExternalLink
 }
 
 // Structure that has all known data about an entry.
