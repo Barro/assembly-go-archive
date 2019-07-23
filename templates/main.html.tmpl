@@ -1,9 +1,11 @@
 {{template "navbar" .Context}}
 
 {{/* . is type of []*site.MainContext */}}
+{{/*
 <p>
   Welcome to Assembly Archive.
   See a <a href="{{.Context.SiteRoot}}/description">longer description</a> about this service.</p>
+*/}}
 {{$ctx := .}}
 {{range $index, $element := .Galleries}}
 <div class="mediacategory">

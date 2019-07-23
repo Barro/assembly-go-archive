@@ -10,4 +10,8 @@ type SiteState struct {
 	Years []*base.Year
 }
 
+type YoutubeAsset struct {
+	Id string
+}
+
 var StateInstance SiteState

@@ -277,7 +277,7 @@ func read_entry_info(directory string, url_path string) (base.Entry, error) {
 	type EntryMeta struct {
 		Title          string
 		Author         string
-		Asset          string
+		AssetType      string
 		Description    string
 		External_links []base.ExternalLinksSection
 		Thumbnails     map[string]string
@@ -290,7 +290,7 @@ func read_entry_info(directory string, url_path string) (base.Entry, error) {
 
 	entry.Title = meta_entry.Title
 	entry.Author = meta_entry.Author
-	entry.Asset = meta_entry.Asset
+	entry.AssetType = meta_entry.AssetType
 	entry.Description = meta_entry.Description
 	fmt.Println(meta_entry)
 

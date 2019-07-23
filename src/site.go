@@ -124,6 +124,7 @@ type EntryContext struct {
 	Year    *base.Year
 	Section *base.Section
 	Entry   EntryInfo
+	Asset   string
 	Context PageContext
 }
 
@@ -375,6 +376,23 @@ type RequestHandlerFunc func(
 	w http.ResponseWriter,
 	r *http.Request)
 
+type AssetHandler func(data interface{}) string
+
+var ASSET_HANDLERS = map[string]AssetHandler{
+	"youtube": handle_asset_youtube,
+}
+
+func handle_asset_youtube(data_obj interface{}) string {
+	youtube := data_obj.(state.YoutubeAsset)
+	EMBED_TEMPLATE := `<iframe id="ytplayerembed" class="youtube-player" width="%d" height="%d" src="https://www.youtube.com/embed/%s" style="border: 0px" allowfullscreen="allowfullscreen">\n</iframe>`
+	CONTROLS_HEIGHT := 0.0
+	ASPECT_RATIO := 16.0 / 9.0
+	DEFAULT_WIDTH := 640
+	width := DEFAULT_WIDTH
+	height := int(float64(width)/ASPECT_RATIO + CONTROLS_HEIGHT)
+	return fmt.Sprintf(EMBED_TEMPLATE, width, height, youtube.Id)
+}
+
 func handle_entry(
 	site Site,
 	path_elements map[string]string,
@@ -419,16 +437,28 @@ func handle_entry(
 			},
 		},
 	}
+
+	asset_handler, ok := ASSET_HANDLERS[entry.Curr.AssetType]
+	if !ok {
+		server.Ise(w)
+		log.Printf(
+			"No handler on %s for asset type %s",
+			entry.Curr.Path,
+			entry.Curr.AssetType)
+		return
+	}
 	context := EntryContext{
 		Year:    entry.Year,
 		Section: entry.Section,
 		Entry:   entry,
+		Asset:   asset_handler(entry.Curr.AssetData),
 		Context: page_context,
 	}
 	err_template := render_template(w, site.Templates.Entry, context)
 	if err_template != nil {
 		server.Ise(w)
 		log.Printf("Internal entry page error: %s", err_template)
+		return
 	}
 }
 

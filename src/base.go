@@ -46,7 +46,8 @@ type Entry struct {
 	Key           string
 	Title         string
 	Author        string
-	Asset         string
+	AssetType     string
+	AssetData     interface{}
 	Description   string
 	ExternalLinks []ExternalLinksSection
 	Thumbnails    Thumbnails

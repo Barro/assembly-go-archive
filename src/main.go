@@ -54,11 +54,14 @@ func exit(w http.ResponseWriter, r *http.Request) {
 
 func create_sections(site_root string, year base.Year) []*base.Section {
 	entry := base.Entry{
-		Path:        "/2018/section/entry",
-		Key:         "entry",
-		Title:       "title",
-		Author:      "author",
-		Asset:       "asset",
+		Path:      "/2018/section/entry",
+		Key:       "entry",
+		Title:     "title",
+		Author:    "author",
+		AssetType: "youtube",
+		AssetData: state.YoutubeAsset{
+			Id: "idOK0JlRhZY",
+		},
 		Description: "description",
 		ExternalLinks: []base.ExternalLinksSection{
 			base.ExternalLinksSection{
