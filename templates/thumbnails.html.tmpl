@@ -7,7 +7,7 @@
     {{$thumbnail := .Thumbnails.Default}}
     <picture>
       <img class="thumbnail-image"
-           src="{{$thumbnail.Path|html}}"
+           src="{{$thumbnail.Path|html}}?{{$thumbnail.Checksum}}"
            alt="{{.|view_author_title}}"
            title="{{.|view_author_title}}"
            width="{{$thumbnail.Size.X}}"

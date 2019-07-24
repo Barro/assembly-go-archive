@@ -10,7 +10,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"server"
 	"state"
@@ -37,6 +39,7 @@ type Site struct {
 	Settings  base.SiteSettings
 	State     *state.SiteState
 	Templates *SiteTemplates
+	Static    map[string]string
 }
 
 type YearlyNavigation struct {
@@ -59,6 +62,7 @@ type PageContext struct {
 	Breadcrumbs      Breadcrumbs
 	Title            string
 	SiteRoot         string
+	Static           map[string]string
 	CurrentYear      int
 	Description      string
 	SiteState        *state.SiteState
@@ -356,6 +360,61 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 	return templates, nil
 }
 
+func walk_directories_impl(root string, walkFn filepath.WalkFunc, subpath string, current_depth int, err error) error {
+	if err != nil {
+		return err
+	}
+	if current_depth > 8 {
+		return errors.New(
+			fmt.Sprintf(
+				"Trying to recurse too deep under %s at %s!", root, subpath))
+	}
+	files, err_readdir := ioutil.ReadDir(path.Join(root, subpath))
+	if err_readdir != nil {
+		return err_readdir
+	}
+	for _, info := range files {
+		new_subpath := path.Join(subpath, info.Name())
+		if info.IsDir() {
+			err_walk := walk_directories_impl(
+				root, walkFn, new_subpath, current_depth+1, nil)
+			if err_walk != nil {
+				return err_walk
+			}
+			continue
+		}
+		if err := walkFn(new_subpath, info, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func walk_directories(root string, walkFn filepath.WalkFunc) error {
+	return walk_directories_impl(root, walkFn, "", 0, nil)
+}
+
+func load_static_files(settings *base.SiteSettings) (map[string]string, error) {
+	result := make(map[string]string)
+	err := walk_directories(
+		settings.StaticDir,
+		func(subpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			fs_path := path.Join(settings.StaticDir, subpath)
+			checksum, err_checksum := base.CreateFileChecksum(fs_path)
+			if err_checksum != nil {
+				log.Printf("Checksum calculation failed on %s", fs_path)
+				return err_checksum
+			}
+			result[subpath] = checksum
+			return nil
+		},
+	)
+	return result, err
+}
+
 func render_template(
 	w http.ResponseWriter,
 	t *template.Template,
@@ -409,6 +468,7 @@ func handle_entry(
 		Path:     path_elements[""],
 		Title:    author_title(entry.Curr),
 		SiteRoot: site.Settings.SiteRoot,
+		Static:   site.Static,
 		Breadcrumbs: Breadcrumbs{
 			Parents: []InternalLink{
 				InternalLink{
@@ -531,6 +591,7 @@ func handle_section(
 		Path:     path_elements[""],
 		Title:    title,
 		SiteRoot: site.Settings.SiteRoot,
+		Static:   site.Static,
 		Breadcrumbs: Breadcrumbs{
 			Parents: []InternalLink{
 				InternalLink{
@@ -740,6 +801,7 @@ func handle_year(
 		Path:     path_elements[""],
 		Title:    year.Curr.Key,
 		SiteRoot: site.Settings.SiteRoot,
+		Static:   site.Static,
 		Breadcrumbs: Breadcrumbs{
 			Last: InternalLink{
 				Path:     year.Curr.Path,
@@ -895,6 +957,7 @@ func handle_main(
 	page_context := PageContext{
 		Path:     path_elements[""],
 		SiteRoot: site.Settings.SiteRoot,
+		Static:   site.Static,
 		Navigation: PageNavigation{
 			Prev: *years_before,
 			Next: *years_after,
@@ -959,15 +1022,23 @@ func route_request(site Site,
 }
 
 func SiteRenderer(settings base.SiteSettings, state *state.SiteState) http.HandlerFunc {
-	templates, err := load_templates(&settings)
-	if err != nil {
-		log.Println(err)
+	templates, err_templates := load_templates(&settings)
+	if err_templates != nil {
+		log.Println(err_templates)
 		panic("Unable to load templates!")
 	}
+
+	static, err_static := load_static_files(&settings)
+	if err_static != nil {
+		log.Println(err_static)
+		panic("Unable to load static files!")
+	}
+
 	site := Site{
 		Settings:  settings,
 		State:     state,
 		Templates: &templates,
+		Static:    static,
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

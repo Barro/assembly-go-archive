@@ -3,6 +3,7 @@ package main
 import (
 	"api"
 	"base"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -86,16 +87,15 @@ func create_sections(site_root string, year base.Year) []*base.Section {
 			},
 		},
 		Thumbnails: base.Thumbnails{
-			Default: base.ThumbnailInfo{
+			Default: base.ImageInfo{
 				Path:     site_root + "/_data/2018/music-background.jpeg",
-				Checksum: nil,
+				Checksum: base64.RawURLEncoding.EncodeToString([]byte("abba")),
 				Size: base.Resolution{
 					X: 160,
 					Y: 90,
 				},
 				Type: "image/png",
 			},
-			Extra: []base.TypedThumbnails{},
 		},
 	}
 

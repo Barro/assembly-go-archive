@@ -4,8 +4,6 @@ import (
 	"archive/tar"
 	"base"
 	"compress/gzip"
-	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -51,24 +49,6 @@ func _ise(w http.ResponseWriter, err error) {
 func bad_request(w http.ResponseWriter, message string) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte(message + "\n"))
-}
-
-// Creates a checksum of a file that is appropriate for caching for
-// long time periods. For less than 1 year, though.
-func create_file_checksum(filename string) (string, error) {
-	stats, err := os.Stat(filename)
-	if err != nil {
-		return "", err
-	}
-	modified := stats.ModTime()
-	// Same values can be encountered every 136 years.
-	value := uint32(modified.Unix())
-
-	buffer := make([]byte, 4)
-	binary.LittleEndian.PutUint32(buffer, value)
-	str := base64.RawURLEncoding.EncodeToString(buffer)
-	// All 32 bit values fit in 6 characters (= 36 bits space).
-	return str[:6], nil
 }
 
 type ResolutionError struct {
@@ -294,23 +274,23 @@ func read_entry_info(directory string, url_path string) (base.Entry, error) {
 	entry.Description = meta_entry.Description
 	fmt.Println(meta_entry)
 
-	_json_to_thumbnail := func(value map[string]string) (base.ThumbnailInfo, error) {
-		checksum, err := create_file_checksum(filepath.Join(directory, value["path"]))
+	_json_to_thumbnail := func(value map[string]string) (base.ImageInfo, error) {
+		checksum, err := base.CreateFileChecksum(filepath.Join(directory, value["path"]))
 		if err != nil {
-			return base.ThumbnailInfo{}, err
+			return base.ImageInfo{}, err
 		}
 		resolution_str, ok := value["resolution"]
 		if !ok {
-			return base.ThumbnailInfo{}, &InputError{
+			return base.ImageInfo{}, &InputError{
 				"No resolution specified for thumbnail!"}
 		}
 		resolution, err_res := string_to_resolution(resolution_str)
 		if err_res != nil {
-			return base.ThumbnailInfo{}, err_res
+			return base.ImageInfo{}, err_res
 		}
-		return base.ThumbnailInfo{
+		return base.ImageInfo{
 			url_path + "/" + value["path"],
-			&checksum,
+			checksum,
 			resolution,
 			value["type"]}, nil
 	}

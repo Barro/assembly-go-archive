@@ -16,9 +16,9 @@
 <meta property="fb:page_id" content="183599045012296" />
 
 <link rel="shortcut icon" type="image/vnd.microsoft.icon"
-      href="{{.Context.SiteRoot}}/_static/images/favicon.ico" />
+      href="{{.Context.SiteRoot}}/_static/images/favicon.ico?{{index .Context.Static "images/favicon.ico"}} />
 <link rel="icon" type="image/vnd.microsoft.icon"
-      href="{{.Context.SiteRoot}}/_static/images/favicon.ico" />
+      href="{{.Context.SiteRoot}}/_static/images/favicon.ico?{{index .Context.Static "images/favicon.ico"}}" />
 
 <!-- List of CSS files that are optimized and appended into one with yui-compressor -->
 <!-- <link rel="stylesheet" href="/static/css/reset.css" /> -->
@@ -26,7 +26,8 @@
 <!-- <link rel="stylesheet" href="/static/css/text.css" /> -->
 <!-- <link rel="stylesheet" href="/static/css/style.css" /> -->
 
-<link rel="stylesheet" href="{{.Context.SiteRoot}}/_static/allstyles-min.css" />
+<link rel="stylesheet"
+      href="{{.Context.SiteRoot}}/_static/allstyles-min.css?{{index .Context.Static "allstyles-min.css"}}" />
 
 <meta name="viewport" content="width=640" />
 
@@ -93,7 +94,7 @@
     s.type = 'text/javascript';
     s.async = true;
     s.src = (document.location.protocol + '//' +
-             document.location.host + '{{.Context.SiteRoot|html}}/_static/allscripts-min.js');
+             document.location.host + '{{.Context.SiteRoot|html}}/_static/allscripts-min.js?{{index .Context.Static "allscripts-min.js"}}');
     var x = document.getElementsByTagName('script')[0];
     x.parentNode.insertBefore(s, x);
   }

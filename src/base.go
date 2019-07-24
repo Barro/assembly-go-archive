@@ -1,5 +1,12 @@
 package base
 
+import (
+	"crypto/sha256"
+	"encoding/base64"
+	"io"
+	"os"
+)
+
 type SiteSettings struct {
 	SiteRoot     string
 	DataDir      string
@@ -12,21 +19,15 @@ type Resolution struct {
 	Y int
 }
 
-type ThumbnailInfo struct {
+type ImageInfo struct {
 	Path     string
-	Checksum *string
+	Checksum string
 	Size     Resolution
 	Type     string
 }
 
-type TypedThumbnails struct {
-	Type       string
-	Thumbnails []ThumbnailInfo
-}
-
 type Thumbnails struct {
-	Default ThumbnailInfo
-	Extra   []TypedThumbnails
+	Default ImageInfo
 }
 
 type ExternalLink struct {
@@ -68,4 +69,22 @@ type Year struct {
 	Key      string
 	Name     string
 	Sections []*Section
+}
+
+// Creates a checksum of a file that is appropriate for caching.
+func CreateFileChecksum(filename string) (string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+	result_full := hasher.Sum(nil)
+	str := base64.RawURLEncoding.EncodeToString(result_full[:4])
+	// All 32 bit values fit in 6 characters (= 36 bits space).
+	return str[:6], nil
 }
