@@ -435,14 +435,15 @@ type RequestHandlerFunc func(
 	w http.ResponseWriter,
 	r *http.Request)
 
-type AssetHandler func(data interface{}) string
+type AssetHandler func(site Site, entry base.Entry) string
 
 var ASSET_HANDLERS = map[string]AssetHandler{
 	"youtube": handle_asset_youtube,
+	"image":   handle_asset_image,
 }
 
-func handle_asset_youtube(data_obj interface{}) string {
-	youtube := data_obj.(state.YoutubeAsset)
+func handle_asset_youtube(site Site, entry base.Entry) string {
+	youtube := entry.AssetData.(state.YoutubeAsset)
 	EMBED_TEMPLATE := `<iframe id="ytplayerembed" class="youtube-player" width="%d" height="%d" src="https://www.youtube.com/embed/%s" style="border: 0px" allowfullscreen="allowfullscreen">\n</iframe>`
 	CONTROLS_HEIGHT := 0.0
 	ASPECT_RATIO := 16.0 / 9.0
@@ -450,6 +451,27 @@ func handle_asset_youtube(data_obj interface{}) string {
 	width := DEFAULT_WIDTH
 	height := int(float64(width)/ASPECT_RATIO + CONTROLS_HEIGHT)
 	return fmt.Sprintf(EMBED_TEMPLATE, width, height, youtube.Id)
+}
+
+func handle_asset_image(site Site, entry base.Entry) string {
+	image := entry.AssetData.(state.ImageAsset)
+	EMBED_TEMPLATE := `
+<img src="%s" alt="%s" title="%s" width="%d" height="%d" />
+`
+	image_path := fmt.Sprintf(
+		"%s/_data/%s?%s",
+		site.Settings.SiteRoot,
+		image.Default.Path,
+		image.Default.Checksum)
+	image_author_title := author_title(entry)
+	return fmt.Sprintf(
+		EMBED_TEMPLATE,
+		html.EscapeString(image_path),
+		html.EscapeString(image_author_title),
+		html.EscapeString(image_author_title),
+		image.Default.Size.X,
+		image.Default.Size.Y,
+	)
 }
 
 func handle_entry(
@@ -511,7 +533,7 @@ func handle_entry(
 		Year:    entry.Year,
 		Section: entry.Section,
 		Entry:   entry,
-		Asset:   asset_handler(entry.Curr.AssetData),
+		Asset:   asset_handler(site, entry.Curr),
 		Context: page_context,
 	}
 	err_template := render_template(w, site.Templates.Entry, context)

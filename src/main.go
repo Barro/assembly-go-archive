@@ -99,6 +99,37 @@ func create_sections(site_root string, year base.Year) []*base.Section {
 		},
 	}
 
+	entry_image := base.Entry{
+		Path:      "/2018/section/entry",
+		Key:       "entry-image",
+		Title:     "title-image",
+		Author:    "author'\"-image",
+		AssetType: "image",
+		AssetData: state.ImageAsset{
+			Default: base.ImageInfo{
+				Path:     "2018/music-background.jpeg",
+				Checksum: "asdf",
+				Size: base.Resolution{
+					X: 640,
+					Y: 360,
+				},
+				Type: "image/jpeg",
+			},
+		},
+		Description: "description-image",
+		Thumbnails: base.Thumbnails{
+			Default: base.ImageInfo{
+				Path:     site_root + "/_data/2018/music-background.jpeg",
+				Checksum: base64.RawURLEncoding.EncodeToString([]byte("baab")),
+				Size: base.Resolution{
+					X: 160,
+					Y: 90,
+				},
+				Type: "image/png",
+			},
+		},
+	}
+
 	var sections []*base.Section
 	section_ranked := base.Section{
 		Path:        "/2018/section-ranked/",
@@ -124,6 +155,10 @@ func create_sections(site_root string, year base.Year) []*base.Section {
 			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
 			new_entry.Title = new_entry.Title + "-" + strconv.Itoa(i)
 			entries_ranked = append(entries_ranked, &new_entry)
+			new_entry_image := entry_image
+			new_entry_image.Key = new_entry_image.Key + "-" + strconv.Itoa(i)
+			new_entry_image.Title = new_entry_image.Title + "-" + strconv.Itoa(i)
+			entries_ranked = append(entries_ranked, &new_entry_image)
 		}
 		new_section_ranked.Entries = entries_ranked
 		sections = append(sections, &new_section_ranked)
