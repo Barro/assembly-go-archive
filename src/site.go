@@ -761,13 +761,13 @@ func get_yearly_navigation(site Site, current_year int) YearlyNavigation {
 	}
 
 	index_first := highlighted_index - visible_years/2
-	if index_first < 0 {
-		index_first = 0
-	}
 	index_last := index_first + visible_years
 	if index_last >= years_count {
 		index_last = years_count
 		index_first = index_last - visible_years
+	}
+	if index_first < 0 {
+		index_first = 0
 	}
 	var display_years []InternalLink
 	if 0 < index_first {

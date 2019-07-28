@@ -241,12 +241,16 @@ func main() {
 		http.HandleFunc("/exit/", exit_forbidden)
 	}
 
-	state := seed_site_state(settings.SiteRoot)
+	state, err_state := state.New(settings.DataDir, settings.SiteRoot)
+	if err_state != nil {
+		log.Fatal(err_state)
+	}
+	//state := seed_site_state(settings.SiteRoot)
 
 	http.HandleFunc("/api/", server.StripPrefix("/api/",
-		server.BasicAuth(*authfile, api.Renderer(settings, &state))))
+		server.BasicAuth(*authfile, api.Renderer(settings, state))))
 	http.HandleFunc("/site/", server.StripPrefix("/site/",
-		site.SiteRenderer(settings, &state)))
+		site.SiteRenderer(settings, state)))
 	http.HandleFunc("/teapot/", RenderTeapot)
 	http.Handle("/site/_data/", http.StripPrefix("/site/_data/", http.FileServer(http.Dir(settings.DataDir))))
 	http.Handle("/site/_static/", http.StripPrefix("/site/_static/", http.FileServer(http.Dir(settings.StaticDir))))
