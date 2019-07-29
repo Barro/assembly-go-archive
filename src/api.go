@@ -321,10 +321,11 @@ func replace_path(target string, new string, old string) error {
 
 func handle_year(
 	settings base.SiteSettings,
+	site_state *state.SiteState,
 	year int,
 	w http.ResponseWriter,
 	r *http.Request) {
-	fmt.Println("Year", year)
+	url_path := fmt.Sprintf("%s/%d", settings.SiteRoot, year)
 	tmpdir, err := ioutil.TempDir(settings.DataDir, ".new-year-")
 	if err != nil {
 		_ise(w, err)
@@ -339,10 +340,21 @@ func handle_year(
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
 	}
-	url_path := strconv.Itoa(year)
-	if err := validate_year_dir(new_dir, url_path); err != nil {
-		bad_request(w, "Invalid year data: "+err.Error())
+
+	year_data, err_read := state.ReadYear(
+		new_dir,
+		fmt.Sprintf("%s/_data/%d", settings.SiteRoot, year),
+		url_path,
+		strconv.Itoa(year))
+	if err_read != nil {
+		bad_request(w, "Invalid year data: "+err_read.Error())
+		return
 	}
+
+	// url_path := strconv.Itoa(year)
+	// if err := validate_year_dir(new_dir, url_path); err != nil {
+	// 	bad_request(w, "Invalid year data: "+err.Error())
+	// }
 
 	target_dir := filepath.Join(settings.DataDir, strconv.Itoa(year))
 	old_dir := filepath.Join(tmpdir, "old")
@@ -350,6 +362,23 @@ func handle_year(
 	if err_replace != nil {
 		_ise(w, err_replace)
 		return
+	}
+	last_year := -1
+	for i, old_year := range site_state.Years {
+		last_year = old_year.Year
+		if old_year.Year < year {
+			site_state.Years = append(site_state.Years, nil)
+			copy(site_state.Years[i+1:], site_state.Years[i:])
+			site_state.Years[i] = year_data
+			break
+		}
+		if old_year.Year == year {
+			site_state.Years[i] = year_data
+			break
+		}
+	}
+	if year < last_year {
+		site_state.Years = append(site_state.Years, year_data)
 	}
 	w.Write([]byte("OK\n"))
 }
@@ -423,13 +452,14 @@ func validate_entry_dir(dir string, url_path string) error {
 
 func handle_section(
 	settings base.SiteSettings,
-	year int,
-	section string,
+	site_state *state.SiteState,
+	year *base.Year,
+	key string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	url_path := strconv.Itoa(year) + "/" + section
-	yeardir := path.Join(settings.DataDir, strconv.Itoa(year))
-	target_dir := path.Join(yeardir, section)
+	url_path := fmt.Sprintf("%s/%s/%s", settings.SiteRoot, year.Key, key)
+	yeardir := path.Join(settings.DataDir, year.Key)
+	target_dir := path.Join(yeardir, key)
 	if _, err := os.Stat(target_dir); err != nil {
 		bad_request(w, "Can only update an existing section")
 		return
@@ -451,9 +481,20 @@ func handle_section(
 		bad_request(w, "Invalid tar file: "+err_extract.Error())
 		return
 	}
-	if err := validate_section_dir(new_dir, url_path); err != nil {
-		bad_request(w, "Invalid section data: "+err.Error())
+	section_data, err_section := state.ReadSection(
+		new_dir,
+		fmt.Sprintf("%s/_data/%s/%s", settings.SiteRoot, year.Key, key),
+		url_path,
+		key)
+	if err_section != nil {
+		bad_request(w, "Invalid section data: "+err_section.Error())
+		return
 	}
+
+	// if err := validate_section_dir(new_dir, url_path); err != nil {
+	// 	bad_request(w, "Invalid section data: "+err.Error())
+	// 	return
+	// }
 
 	old_dir := filepath.Join(tmpdir, "old")
 	err_replace := replace_path(target_dir, new_dir, old_dir)
@@ -461,10 +502,20 @@ func handle_section(
 		_ise(w, err_replace)
 		return
 	}
+	for i, old_section := range year.Sections {
+		if old_section.Key == key {
+			year.Sections[i] = section_data
+			break
+		}
+	}
 	w.Write([]byte("OK\n"))
 }
 
-func renderer(settings base.SiteSettings, w http.ResponseWriter, r *http.Request) {
+func renderer(
+	settings base.SiteSettings,
+	state *state.SiteState,
+	w http.ResponseWriter,
+	r *http.Request) {
 	switch r.Method {
 	case http.MethodPut:
 		// Only accept PUT method.
@@ -487,9 +538,20 @@ func renderer(settings base.SiteSettings, w http.ResponseWriter, r *http.Request
 		bad_request(w, "Year '"+year_str+"' is not a number!")
 		return
 	}
-	year, _ := strconv.Atoi(year_str)
+	year_int, _ := strconv.Atoi(year_str)
 	if len(parts) == 1 {
-		handle_year(settings, year, w, r)
+		handle_year(settings, state, year_int, w, r)
+		return
+	}
+	var year *base.Year
+	for _, year_candidate := range state.Years {
+		if year_candidate.Key == year_str {
+			year = year_candidate
+			break
+		}
+	}
+	if year == nil {
+		bad_request(w, "No previous year defined for section!")
 		return
 	}
 	section := parts[1]
@@ -502,11 +564,11 @@ func renderer(settings base.SiteSettings, w http.ResponseWriter, r *http.Request
 		bad_request(w, "Illegal section name '"+section+"'!")
 		return
 	}
-	handle_section(settings, year, section, w, r)
+	handle_section(settings, state, year, section, w, r)
 }
 
 func Renderer(settings base.SiteSettings, state *state.SiteState) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		renderer(settings, w, r)
+		renderer(settings, state, w, r)
 	}
 }
