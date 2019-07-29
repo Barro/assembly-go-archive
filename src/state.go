@@ -97,7 +97,18 @@ func (asset *EntryAsset) UnmarshalJSON(data []byte) error {
 	}
 	asset.Type = asset_type.Type
 	if asset_type.Type == "image" {
-
+		type AssetData struct {
+			Data ThumbnailsMeta
+		}
+		var asset_data AssetData
+		err_data := json.Unmarshal(data, &asset_data)
+		if err_data != nil {
+			return err_data
+		}
+		image_data := ImageAsset{
+			Default: get_entry_image("", asset_data.Data.Default),
+		}
+		asset.Data = image_data
 	} else if asset_type.Type == "youtube" {
 		type AssetData struct {
 			Data YoutubeAsset
@@ -221,10 +232,8 @@ func ReadSection(
 	var entries []*base.Entry
 	for _, entry_key := range meta.Entries {
 		entry_fs_directory := filepath.Join(fs_directory, entry_key)
-		entry_data_path := fmt.Sprintf(
-			"%s/%s", data_path, entry_key)
-		entry_path_prefix := fmt.Sprintf(
-			"%s/%s", path_prefix, entry_key)
+		entry_data_path := path.Join(data_path, entry_key)
+		entry_path_prefix := path.Join(path_prefix, entry_key)
 		entry, err_entry := ReadEntry(
 			entry_fs_directory, entry_data_path, entry_path_prefix, entry_key)
 		if err_entry != nil {
@@ -243,15 +252,16 @@ func ReadSection(
 	return &result, nil
 }
 
-func get_entry_thumbnails(directory string, meta ThumbnailsMeta) base.Thumbnails {
-	result := base.Thumbnails{
-		Default: base.ImageInfo{
-			Path: path.Clean(fmt.Sprintf(
-				"%s/%s", directory, meta.Default.Filename)),
-			Checksum: meta.Default.Checksum,
-			Size:     meta.Default.Size,
-			Type:     meta.Default.Type,
-		},
+func get_entry_image(directory string, meta ImageInfoMeta) base.ImageInfo {
+	image_path := meta.Filename
+	if directory != "" {
+		image_path = path.Clean(fmt.Sprintf("%s/%s", directory, meta.Filename))
+	}
+	result := base.ImageInfo{
+		Path:     image_path,
+		Checksum: meta.Checksum,
+		Size:     meta.Size,
+		Type:     meta.Type,
 	}
 	return result
 }
@@ -287,7 +297,15 @@ func ReadEntry(
 		Description: meta.Description,
 		AssetType:   meta.Asset.Type,
 		AssetData:   meta.Asset.Data,
-		Thumbnails:  get_entry_thumbnails(data_path, meta.Thumbnails),
+		Thumbnails: base.Thumbnails{
+			Default: get_entry_image(data_path, meta.Thumbnails.Default),
+		},
+	}
+	// Adjust the incomplete path:
+	if result.AssetType == "image" {
+		asset_data := result.AssetData.(ImageAsset)
+		asset_data.Default.Path = path.Join(data_path, asset_data.Default.Path)
+		result.AssetData = asset_data
 	}
 	return &result, nil
 }
@@ -311,8 +329,8 @@ func New(fs_directory string, site_root string) (*SiteState, error) {
 	var years []*base.Year
 	for _, year_candidate := range year_candidates {
 		year_dir := filepath.Join(fs_directory, year_candidate)
-		year_data := fmt.Sprintf("%s/_data/%s", site_root, year_candidate)
-		year_prefix := fmt.Sprintf("%s/%s", site_root, year_candidate)
+		year_data := path.Join(site_root, "_data", year_candidate)
+		year_prefix := path.Join(site_root, year_candidate)
 		year, err := ReadYear(year_dir, year_data, year_prefix, year_candidate)
 		if err != nil {
 			return nil, err

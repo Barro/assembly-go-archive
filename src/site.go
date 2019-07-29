@@ -459,8 +459,7 @@ func handle_asset_image(site Site, entry base.Entry) string {
 <img src="%s" alt="%s" title="%s" width="%d" height="%d" />
 `
 	image_path := fmt.Sprintf(
-		"%s/_data/%s?%s",
-		site.Settings.SiteRoot,
+		"%s?%s",
 		image.Default.Path,
 		image.Default.Checksum)
 	image_author_title := author_title(entry)
