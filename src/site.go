@@ -443,7 +443,7 @@ var ASSET_HANDLERS = map[string]AssetHandler{
 }
 
 func handle_asset_youtube(site Site, entry base.Entry) string {
-	youtube := entry.AssetData.(state.YoutubeAsset)
+	youtube := entry.Asset.Data.(state.YoutubeAsset)
 	EMBED_TEMPLATE := `<iframe id="ytplayerembed" class="youtube-player" width="%d" height="%d" src="https://www.youtube.com/embed/%s" style="border: 0px" allowfullscreen="allowfullscreen">\n</iframe>`
 	CONTROLS_HEIGHT := 0.0
 	ASPECT_RATIO := 16.0 / 9.0
@@ -454,7 +454,7 @@ func handle_asset_youtube(site Site, entry base.Entry) string {
 }
 
 func handle_asset_image(site Site, entry base.Entry) string {
-	image := entry.AssetData.(state.ImageAsset)
+	image := entry.Asset.Data.(state.ImageAsset)
 	EMBED_TEMPLATE := `
 <img src="%s" alt="%s" title="%s" width="%d" height="%d" />
 `
@@ -519,13 +519,13 @@ func handle_entry(
 		},
 	}
 
-	asset_handler, ok := ASSET_HANDLERS[entry.Curr.AssetType]
+	asset_handler, ok := ASSET_HANDLERS[entry.Curr.Asset.Type]
 	if !ok {
 		server.Ise(w)
 		log.Printf(
 			"No handler on %s for asset type %s",
 			entry.Curr.Path,
-			entry.Curr.AssetType)
+			entry.Curr.Asset.Type)
 		return
 	}
 	context := EntryContext{

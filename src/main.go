@@ -55,13 +55,15 @@ func exit(w http.ResponseWriter, r *http.Request) {
 
 func create_sections(site_root string, year base.Year) []*base.Section {
 	entry := base.Entry{
-		Path:      "/2018/section/entry",
-		Key:       "entry",
-		Title:     "title",
-		Author:    "author",
-		AssetType: "youtube",
-		AssetData: state.YoutubeAsset{
-			Id: "idOK0JlRhZY",
+		Path:   "/2018/section/entry",
+		Key:    "entry",
+		Title:  "title",
+		Author: "author",
+		Asset: base.Asset{
+			Type: "youtube",
+			Data: state.YoutubeAsset{
+				Id: "idOK0JlRhZY",
+			},
 		},
 		Description: "description",
 		ExternalLinks: []base.ExternalLinksSection{
@@ -100,20 +102,22 @@ func create_sections(site_root string, year base.Year) []*base.Section {
 	}
 
 	entry_image := base.Entry{
-		Path:      "/2018/section/entry",
-		Key:       "entry-image",
-		Title:     "title-image",
-		Author:    "author'\"-image",
-		AssetType: "image",
-		AssetData: state.ImageAsset{
-			Default: base.ImageInfo{
-				Path:     "2018/music-background.jpeg",
-				Checksum: "asdf",
-				Size: base.Resolution{
-					X: 640,
-					Y: 360,
+		Path:   "/2018/section/entry",
+		Key:    "entry-image",
+		Title:  "title-image",
+		Author: "author'\"-image",
+		Asset: base.Asset{
+			Type: "image",
+			Data: state.ImageAsset{
+				Default: base.ImageInfo{
+					Path:     "2018/music-background.jpeg",
+					Checksum: "asdf",
+					Size: base.Resolution{
+						X: 640,
+						Y: 360,
+					},
+					Type: "image/jpeg",
 				},
-				Type: "image/jpeg",
 			},
 		},
 		Description: "description-image",

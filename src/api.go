@@ -270,7 +270,7 @@ func read_entry_info(directory string, url_path string) (base.Entry, error) {
 
 	entry.Title = meta_entry.Title
 	entry.Author = meta_entry.Author
-	entry.AssetType = meta_entry.AssetType
+	entry.Asset.Type = meta_entry.AssetType
 	entry.Description = meta_entry.Description
 	fmt.Println(meta_entry)
 

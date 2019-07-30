@@ -41,14 +41,18 @@ type ExternalLinksSection struct {
 	Links []ExternalLink
 }
 
+type Asset struct {
+	Type string
+	Data interface{}
+}
+
 // Structure that has all known data about an entry.
 type Entry struct {
 	Path          string
 	Key           string
 	Title         string
 	Author        string
-	AssetType     string
-	AssetData     interface{}
+	Asset         Asset
 	Description   string
 	ExternalLinks []ExternalLinksSection
 	Thumbnails    Thumbnails

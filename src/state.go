@@ -127,8 +127,8 @@ func (asset *EntryAsset) UnmarshalJSON(data []byte) error {
 
 type EntryMeta struct {
 	Title         string
-	Author        string                      `json:""`
-	Asset         EntryAsset                  `json:"asset"`
+	Author        string `json:""`
+	Asset         EntryAsset
 	Description   string                      `json:""`
 	ExternalLinks []base.ExternalLinksSection `json:{}`
 	Thumbnails    ThumbnailsMeta
@@ -295,17 +295,19 @@ func ReadEntry(
 		Title:       meta.Title,
 		Author:      meta.Author,
 		Description: meta.Description,
-		AssetType:   meta.Asset.Type,
-		AssetData:   meta.Asset.Data,
+		Asset: base.Asset{
+			Type: meta.Asset.Type,
+			Data: meta.Asset.Data,
+		},
 		Thumbnails: base.Thumbnails{
 			Default: get_entry_image(data_path, meta.Thumbnails.Default),
 		},
 	}
 	// Adjust the incomplete path:
-	if result.AssetType == "image" {
-		asset_data := result.AssetData.(ImageAsset)
+	if result.Asset.Type == "image" {
+		asset_data := result.Asset.Data.(ImageAsset)
 		asset_data.Default.Path = path.Join(data_path, asset_data.Default.Path)
-		result.AssetData = asset_data
+		result.Asset.Data = asset_data
 	}
 	return &result, nil
 }
