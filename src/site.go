@@ -142,11 +142,6 @@ func in_array(array []*base.Entry, entry *base.Entry) bool {
 	return false
 }
 
-func _bad_request(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("Bad request!\n"))
-}
-
 func random_select_section_entries(section *base.Section, amount int) []*base.Entry {
 	section_indexes := rand.Perm(len(section.Entries))
 	max_items := len(section.Entries)
@@ -911,7 +906,7 @@ func _create_year_range_link(
 	if len(years) == 1 {
 		return InternalLink{
 			Path: fmt.Sprintf(
-				"%s/?y=%d-%d", site.Settings.SiteRoot, years[0].Year, years[0].Year),
+				"%s/?y=%d", site.Settings.SiteRoot, years[0].Year),
 			Contents: fmt.Sprintf("%d", years[0].Year),
 		}
 	}
@@ -926,35 +921,21 @@ func _create_year_range_link(
 	}
 	return InternalLink{
 		Path: fmt.Sprintf(
-			"%s/?y=%d-%d", site.Settings.SiteRoot, years_first.Year, years_last.Year),
+			"%s/?y=%d", site.Settings.SiteRoot, years_first.Year),
 		Contents: fmt.Sprintf("%d-%d", years_first.Year, years_last.Year),
 	}
 }
 
 func _read_year_range(
-	site Site, r *http.Request) ([]*base.Year, *InternalLink, *InternalLink, error) {
+	site Site, r *http.Request) ([]*base.Year, *InternalLink, *InternalLink) {
 	year_start := 0
 	year_end := 99999
-	year_range_requested := string(r.FormValue("y"))
-	if len(year_range_requested) > 0 {
-		year_range_regexp := regexp.MustCompile("^(\\d{4})-(\\d{4})$")
-		match := year_range_regexp.FindStringSubmatch(year_range_requested)
-		if match == nil {
-			log.Printf("Year range is not a numeric range")
-			return nil, nil, nil, errors.New("Year range is not a numeric range")
-		}
+	year_start_requested := string(r.FormValue("y"))
+	if len(year_start_requested) > 0 {
 		var err error
-		year_start, err = strconv.Atoi(match[1])
-		if err != nil {
-			panic(err)
-		}
-		year_end, err = strconv.Atoi(match[2])
-		if err != nil {
-			panic(err)
-		}
-		if year_end < year_start {
-			log.Printf("End year %d < start year %d", year_end, year_start)
-			return nil, nil, nil, errors.New("year_end < year_start")
+		year_start, err = strconv.Atoi(year_start_requested)
+		if err == nil {
+			year_end = year_start + DEFAULT_MAIN_YEARS
 		}
 	} else if len(site.State.Years) > 0 {
 		// Years array is sorted in the reverse order.
@@ -989,7 +970,7 @@ func _read_year_range(
 	}
 	link_before := _create_year_range_link(site, years_before, latest_year)
 	link_after := _create_year_range_link(site, years_after, latest_year)
-	return years, &link_before, &link_after, nil
+	return years, &link_before, &link_after
 }
 
 func handle_main(
@@ -997,13 +978,7 @@ func handle_main(
 	path_elements map[string]string,
 	w http.ResponseWriter,
 	r *http.Request) {
-	//fmt.Printf("main %v %s\n", path_elements, r.URL)
-	years, years_before, years_after, err_year_range := _read_year_range(site, r)
-	if err_year_range != nil {
-		_bad_request(w)
-		log.Printf("Invalid year range request: %s", err_year_range)
-		return
-	}
+	years, years_before, years_after := _read_year_range(site, r)
 	gallery_thumbnails := make([]GalleryThumbnails, len(years))
 	for i, year := range years {
 		gallery_thumbnails[i] = GalleryThumbnails{

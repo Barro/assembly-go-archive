@@ -350,11 +350,11 @@ func handle_year(
 		bad_request(w, "Invalid year data: "+err_read.Error())
 		return
 	}
-
-	// url_path := strconv.Itoa(year)
-	// if err := validate_year_dir(new_dir, url_path); err != nil {
-	// 	bad_request(w, "Invalid year data: "+err.Error())
-	// }
+	if year_data == nil {
+		bad_request(
+			w, fmt.Sprintf("Year data for year %d is out of range", year))
+		return
+	}
 
 	target_dir := filepath.Join(settings.DataDir, strconv.Itoa(year))
 	old_dir := filepath.Join(tmpdir, "old")
@@ -363,23 +363,28 @@ func handle_year(
 		_ise(w, err_replace)
 		return
 	}
-	last_year := 9999
-	for i, old_year := range site_state.Years {
-		last_year = old_year.Year
-		if old_year.Year < year {
-			site_state.Years = append(site_state.Years, nil)
-			copy(site_state.Years[i+1:], site_state.Years[i:])
-			site_state.Years[i] = year_data
-			break
-		}
+	year_added := false
+	var new_years []*base.Year
+	var last_year *base.Year
+	for _, old_year := range site_state.Years {
 		if old_year.Year == year {
-			site_state.Years[i] = year_data
-			break
+			new_years = append(new_years, year_data)
+			year_added = true
+			continue
+		}
+		last_year = old_year
+		new_years = append(new_years, old_year)
+	}
+	if !year_added {
+		if last_year == nil {
+			new_years = []*base.Year{year_data}
+		} else if year < last_year.Year {
+			new_years = append(new_years, year_data)
+		} else {
+			new_years = append([]*base.Year{year_data}, new_years...)
 		}
 	}
-	if year < last_year {
-		site_state.Years = append(site_state.Years, year_data)
-	}
+	site_state.Years = new_years
 	w.Write([]byte("OK\n"))
 }
 
