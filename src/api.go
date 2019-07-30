@@ -364,27 +364,32 @@ func handle_year(
 		return
 	}
 	year_added := false
-	var new_years []*base.Year
-	var last_year *base.Year
-	for _, old_year := range site_state.Years {
-		if old_year.Year == year {
-			new_years = append(new_years, year_data)
+	var mod_years []*base.Year
+	var next_year *base.Year
+	for _, prev_year := range site_state.Years {
+		if prev_year.Year == year {
+			mod_years = append(mod_years, year_data)
+			next_year = year_data
 			year_added = true
 			continue
 		}
-		last_year = old_year
-		new_years = append(new_years, old_year)
+		if next_year != nil && prev_year.Year < year && year < next_year.Year {
+			mod_years = append(mod_years, year_data)
+			year_added = true
+		}
+		next_year = prev_year
+		mod_years = append(mod_years, prev_year)
 	}
 	if !year_added {
-		if last_year == nil {
-			new_years = []*base.Year{year_data}
-		} else if year < last_year.Year {
-			new_years = append(new_years, year_data)
+		if next_year == nil {
+			mod_years = []*base.Year{year_data}
+		} else if year < next_year.Year {
+			mod_years = append(mod_years, year_data)
 		} else {
-			new_years = append([]*base.Year{year_data}, new_years...)
+			mod_years = append([]*base.Year{year_data}, mod_years...)
 		}
 	}
-	site_state.Years = new_years
+	site_state.Years = mod_years
 	w.Write([]byte("OK\n"))
 }
 

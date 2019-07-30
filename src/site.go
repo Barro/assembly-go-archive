@@ -170,6 +170,9 @@ func random_select_entries(year *base.Year, amount int) []*base.Entry {
 		}
 		index := index_value % total_sections
 		entries := year.Sections[index].Entries
+		if len(entries) == 0 {
+			continue
+		}
 		entry := entries[rand.Intn(len(entries))]
 		// Technically it's possible that we only get 1
 		// entry/section. That's not a problem.
