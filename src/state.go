@@ -162,7 +162,7 @@ type EntryMeta struct {
 	Author        string `json:""`
 	Asset         EntryAsset
 	Description   string                      `json:""`
-	ExternalLinks []base.ExternalLinksSection `json:{}`
+	ExternalLinks []base.ExternalLinksSection `json:"external-links"`
 	Thumbnails    ThumbnailsMeta
 }
 
@@ -337,6 +337,7 @@ func ReadEntry(
 		Thumbnails: base.Thumbnails{
 			Default: get_entry_image(data_path, meta.Thumbnails.Default),
 		},
+		ExternalLinks: meta.ExternalLinks,
 	}
 	// Adjust the incomplete path:
 	if result.Asset.Type == "image" {

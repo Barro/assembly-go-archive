@@ -363,7 +363,7 @@ func handle_year(
 		_ise(w, err_replace)
 		return
 	}
-	last_year := -1
+	last_year := 9999
 	for i, old_year := range site_state.Years {
 		last_year = old_year.Year
 		if old_year.Year < year {

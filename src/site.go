@@ -463,7 +463,14 @@ func handle_asset_youtube(site Site, entry base.Entry) string {
 	DEFAULT_WIDTH := 640
 	width := DEFAULT_WIDTH
 	height := int(float64(width)/ASPECT_RATIO + CONTROLS_HEIGHT)
-	return fmt.Sprintf(EMBED_TEMPLATE, width, height, youtube.Id)
+	embed_id := youtube.Id
+	if strings.Contains(youtube.Id, "#t=") {
+		splits := strings.SplitN(youtube.Id, "#t=", 2)
+		id := splits[0]
+		timestamp := splits[1]
+		embed_id = fmt.Sprintf("%s?start=%s", id, timestamp)
+	}
+	return fmt.Sprintf(EMBED_TEMPLATE, width, height, html.EscapeString(embed_id))
 }
 
 func handle_asset_image(site Site, entry base.Entry) string {
@@ -752,6 +759,9 @@ func get_entry_info(site Site, path_elements map[string]string) (EntryInfo, erro
 }
 
 func get_yearly_navigation(site Site, current_year int) YearlyNavigation {
+	if len(site.State.Years) == 0 {
+		return YearlyNavigation{}
+	}
 	year_max := site.State.Years[0].Year
 	year_min := site.State.Years[len(site.State.Years)-1].Year
 	years_count := len(site.State.Years)
@@ -1002,6 +1012,11 @@ func handle_main(
 			Entries: random_select_entries(year, MAX_PREVIEW_ENTRIES),
 		}
 	}
+	breadcrumbs_last := ""
+	if len(years) > 0 {
+		breadcrumbs_last = fmt.Sprintf(
+			"%d-%d", years[len(years)-1].Year, years[0].Year)
+	}
 	page_context := PageContext{
 		Path:     path_elements[""],
 		SiteRoot: site.Settings.SiteRoot,
@@ -1012,9 +1027,8 @@ func handle_main(
 		},
 		Breadcrumbs: Breadcrumbs{
 			Last: InternalLink{
-				Path: "",
-				Contents: fmt.Sprintf(
-					"%d-%d", years[len(years)-1].Year, years[0].Year),
+				Path:     "",
+				Contents: breadcrumbs_last,
 			},
 		},
 		YearlyNavigation: get_yearly_navigation(site, 0),
