@@ -86,6 +86,34 @@ type EntryAsset struct {
 	Data interface{}
 }
 
+func validate_image_info_meta(info ImageInfoMeta) error {
+	if len(info.Filename) < len("a.png") {
+		return fmt.Errorf(
+			"Image file name '%s' is too short to be a valid one",
+			info.Filename)
+	}
+	if len(info.Type) < len("image/png") {
+		return fmt.Errorf(
+			"Image %s type '%s' is too short to be a valid one",
+			info.Filename,
+			info.Type)
+	}
+	if len(info.Checksum) < 6 {
+		return fmt.Errorf(
+			"Image %s checksum '%s' does not contain enough entropy",
+			info.Filename,
+			info.Checksum)
+	}
+	if info.Size.X < 16 || info.Size.Y < 16 {
+		return fmt.Errorf(
+			"Image %s size %dx%d is too small!",
+			info.Filename,
+			info.Size.X,
+			info.Size.Y)
+	}
+	return nil
+}
+
 func (asset *EntryAsset) UnmarshalJSON(data []byte) error {
 	type AssetType struct {
 		Type string
@@ -105,6 +133,10 @@ func (asset *EntryAsset) UnmarshalJSON(data []byte) error {
 		if err_data != nil {
 			return err_data
 		}
+		if err := validate_image_info_meta(asset_data.Data.Default); err != nil {
+			return err
+		}
+
 		image_data := ImageAsset{
 			Default: get_entry_image("", asset_data.Data.Default),
 		}
@@ -288,6 +320,9 @@ func ReadEntry(
 	err_unmarshal := json.Unmarshal(data, &meta)
 	if err_unmarshal != nil {
 		return nil, err_unmarshal
+	}
+	if err := validate_image_info_meta(meta.Thumbnails.Default); err != nil {
+		return nil, err
 	}
 	result := base.Entry{
 		Key:         key,
