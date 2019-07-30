@@ -311,7 +311,7 @@ func ReadEntry(
 
 	data, err_meta := ReadMetaBytes(fs_directory)
 	if err_meta != nil {
-		return nil, err_meta
+		return nil, fmt.Errorf("%s: %v", key, err_meta)
 	}
 	if data == nil {
 		return nil, nil
@@ -319,10 +319,10 @@ func ReadEntry(
 	var meta EntryMeta
 	err_unmarshal := json.Unmarshal(data, &meta)
 	if err_unmarshal != nil {
-		return nil, err_unmarshal
+		return nil, fmt.Errorf("%s: %v", key, err_unmarshal)
 	}
 	if err := validate_image_info_meta(meta.Thumbnails.Default); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %v", key, err)
 	}
 	result := base.Entry{
 		Key:         key,

@@ -849,10 +849,20 @@ func handle_year(
 
 	gallery_thumbnails := make([]GalleryThumbnails, len(year.Curr.Sections))
 	for i, section := range year.Curr.Sections {
+		var display_entries []*base.Entry
+		if section.IsRanked {
+			preview_entries := MAX_PREVIEW_ENTRIES
+			if len(section.Entries) < preview_entries {
+				preview_entries = len(section.Entries)
+			}
+			display_entries = section.Entries[:preview_entries]
+		} else {
+			display_entries = random_select_section_entries(section, MAX_PREVIEW_ENTRIES)
+		}
 		thumbnails := GalleryThumbnails{
 			Path:    section.Path,
 			Title:   section.Name,
-			Entries: random_select_section_entries(section, MAX_PREVIEW_ENTRIES),
+			Entries: display_entries,
 		}
 		gallery_thumbnails[i] = thumbnails
 	}

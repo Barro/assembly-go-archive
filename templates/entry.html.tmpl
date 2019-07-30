@@ -7,17 +7,9 @@
     {{.Asset}}
   </div>
   <div id="details">
-    {{if .Section.IsRanked}}
-    <p>TODO placement info</p>
-    {{end}}
     {{if .Entry.Curr.Description}}
     <p>
       {{.Entry.Curr.Description}}
-    </p>
-    {{end}}
-    {{if .Entry.Curr.Author}}
-    <p>
-      Author: {{.Entry.Curr.Author|html}}
     </p>
     {{end}}
 
