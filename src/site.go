@@ -17,6 +17,7 @@ import (
 	"server"
 	"state"
 	"strconv"
+	"strings"
 	"text/template"
 )
 
@@ -234,10 +235,22 @@ func view_author_title(entry base.Entry) string {
 }
 
 func view_cut_string(target string, max_length int) string {
-	if len(target) <= max_length {
-		return target
+	MAX_WORD_LENGTH := 23
+	words := regexp.MustCompile("(\\w+)|(\\W+)").FindAllString(target, -1)
+	var short_words []string
+	for _, word := range words {
+		for len(word) > MAX_WORD_LENGTH {
+			short_words = append(short_words, word[:MAX_WORD_LENGTH])
+			short_words = append(short_words, "\u200B")
+			word = word[MAX_WORD_LENGTH:]
+		}
+		short_words = append(short_words, word)
 	}
-	return target[:max_length]
+	word_cut_data := strings.Join(short_words, "")
+	if len(word_cut_data) < max_length {
+		return word_cut_data
+	}
+	return strings.TrimSpace(word_cut_data[:max_length-3]) + "\u2026"
 }
 
 func view_attribute(name string, value string) string {

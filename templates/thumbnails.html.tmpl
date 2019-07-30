@@ -14,9 +14,9 @@
            height="{{$thumbnail.Size.Y}}"
            />
     </picture>
-    {{.Title|html}}
+    {{view_cut_string .Title 37|html}}
     {{if .Author}}
-    <span class="by">{{.Author|html}}</span>
+    <span class="by">{{view_cut_string .Author 25|html}}</span>
     {{end}}
     </a>
 </div>
