@@ -13,7 +13,6 @@ ln -sf $(rootpath //src:assembly-archive) $@
 
 pkg_tar(
     name = "assembly-archive-pkg",
-    package_dir = "assembly-archive",
     deps = [
         "//src:assembly-archive-pkg",
         "//static",
