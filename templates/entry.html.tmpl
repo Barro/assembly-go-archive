@@ -16,11 +16,11 @@
     {{range $index, $external_link_section := .Entry.Curr.ExternalLinks}}
     <div class="section">
       <h3 class="section-title">{{$external_link_section.Name|html}}</h3>
+      {{range $index, $external_link := $external_link_section.Links}}
       <div>
-        {{range $index, $external_link := $external_link_section.Links}}
         <a href="{{$external_link.Href|html}}">{{$external_link.Contents|html}}</a> {{$external_link.Notes|html}}
-        {{end}}
       </div>
+      {{end}}
     </div>
     {{end}}
   </div>

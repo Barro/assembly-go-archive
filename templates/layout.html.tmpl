@@ -16,7 +16,7 @@
 <meta property="fb:page_id" content="183599045012296" />
 
 <link rel="shortcut icon" type="image/vnd.microsoft.icon"
-      href="{{.Context.SiteRoot}}/_static/images/favicon.ico?{{index .Context.Static "images/favicon.ico"}} />
+      href="{{.Context.SiteRoot}}/_static/images/favicon.ico?{{index .Context.Static "images/favicon.ico"}}" />
 <link rel="icon" type="image/vnd.microsoft.icon"
       href="{{.Context.SiteRoot}}/_static/images/favicon.ico?{{index .Context.Static "images/favicon.ico"}}" />
 
@@ -43,7 +43,7 @@
     <header id="header" class="clearfix">
       <div class="alpha grid_5" id="archive-logo">
         {{if .Context.Path}}
-        <a id="archive-logo-image" href="{{.Context.SiteRoot|html}}"
+        <a id="archive-logo-image" href="{{.Context.SiteRoot|html}}/"
            title="Assembly Archive"></a>
         {{else}}
         <span id="archive-logo-image" title="Assembly Archive"></span>
