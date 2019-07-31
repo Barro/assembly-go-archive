@@ -256,8 +256,18 @@ func main() {
 	http.HandleFunc("/site/", server.StripPrefix("/site/",
 		site.SiteRenderer(settings, state)))
 	http.HandleFunc("/teapot/", RenderTeapot)
-	http.Handle("/site/_data/", http.StripPrefix("/site/_data/", http.FileServer(http.Dir(settings.DataDir))))
-	http.Handle("/site/_static/", http.StripPrefix("/site/_static/", http.FileServer(http.Dir(settings.StaticDir))))
+	http.Handle(
+		"/site/_data/",
+		server.AddCacheHeaders(
+			http.StripPrefix(
+				"/site/_data/",
+				http.FileServer(http.Dir(settings.DataDir)))))
+	http.Handle(
+		"/site/_static/",
+		server.AddCacheHeaders(
+			http.StripPrefix(
+				"/site/_static/",
+				http.FileServer(http.Dir(settings.StaticDir)))))
 	http.HandleFunc("/", RenderLinks)
 	listen_addr := fmt.Sprintf("%s:%d", *host, *port)
 	log.Printf("Listening to %s", listen_addr)
