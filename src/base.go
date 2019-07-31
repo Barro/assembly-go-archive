@@ -21,6 +21,7 @@ type Resolution struct {
 
 type ImageInfo struct {
 	Path     string
+	FsPath   string
 	Checksum string
 	Size     Resolution
 	Type     string

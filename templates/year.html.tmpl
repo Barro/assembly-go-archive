@@ -2,11 +2,11 @@
 
 {{/* . is type of []*site.YearContext */}}
 
-{{range $index, $element := .Galleries}}
+{{range $row, $element := .Galleries}}
 <div class="mediacategory">
   <h2 class="gallery-name"><a href="{{$element.Path|html}}"><span>{{$element.Title|html}}</span></h2>
   <div class="mediaitemlisting">
-    {{template "thumbnails" $element.Entries}}
+    {{template "thumbnails" (struct_display_entries $row $element.Entries)}}
   </div>
 </div>
 {{end}}

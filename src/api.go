@@ -289,10 +289,10 @@ func read_entry_info(directory string, url_path string) (base.Entry, error) {
 			return base.ImageInfo{}, err_res
 		}
 		return base.ImageInfo{
-			url_path + "/" + value["path"],
-			checksum,
-			resolution,
-			value["type"]}, nil
+			Path:     url_path + "/" + value["path"],
+			Checksum: checksum,
+			Size:     resolution,
+			Type:     value["type"]}, nil
 	}
 	fmt.Println(meta_entry.Thumbnails)
 	var err_thumbnails error

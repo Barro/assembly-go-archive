@@ -7,14 +7,14 @@
   See a <a href="{{.Context.SiteRoot}}/description">longer description</a> about this service.</p>
 */}}
 {{$ctx := .}}
-{{range $index, $element := .Galleries}}
+{{range $row, $element := .Galleries}}
 <div class="mediacategory">
   <h2 class="gallery-name"><a href="{{$element.Path|html}}"><span>{{$element.Title|html}}</span>
   » <span class="grayed smaller">(random selection)</span></a></h2>
   <div class="mediaitemlisting">
-    {{template "thumbnails" $element.Entries}}
+    {{template "thumbnails" (struct_display_entries $row $element.Entries)}}
   </div>
 </div>
-{{end}} {{/* range $index, $element := .Galleries */}}
+{{end}} {{/* range $row, $element := .Galleries */}}
 
 {{template "navbar" .Context|mod_context_no_breadcrumbs}}

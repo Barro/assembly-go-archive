@@ -138,7 +138,7 @@ func (asset *EntryAsset) UnmarshalJSON(data []byte) error {
 		}
 
 		image_data := ImageAsset{
-			Default: get_entry_image("", asset_data.Data.Default),
+			Default: get_entry_image("", "", asset_data.Data.Default),
 		}
 		asset.Data = image_data
 	} else if asset_type.Type == "youtube" {
@@ -284,13 +284,21 @@ func ReadSection(
 	return &result, nil
 }
 
-func get_entry_image(directory string, meta ImageInfoMeta) base.ImageInfo {
+func get_entry_image(
+	directory string,
+	fs_directory string,
+	meta ImageInfoMeta) base.ImageInfo {
 	image_path := meta.Filename
 	if directory != "" {
 		image_path = path.Clean(fmt.Sprintf("%s/%s", directory, meta.Filename))
 	}
+	fs_path := meta.Filename
+	if fs_directory != "" {
+		fs_path = path.Clean(fmt.Sprintf("%s/%s", fs_directory, meta.Filename))
+	}
 	result := base.ImageInfo{
 		Path:     image_path,
+		FsPath:   fs_path,
 		Checksum: meta.Checksum,
 		Size:     meta.Size,
 		Type:     meta.Type,
@@ -335,7 +343,8 @@ func ReadEntry(
 			Data: meta.Asset.Data,
 		},
 		Thumbnails: base.Thumbnails{
-			Default: get_entry_image(data_path, meta.Thumbnails.Default),
+			Default: get_entry_image(
+				data_path, fs_directory, meta.Thumbnails.Default),
 		},
 		ExternalLinks: meta.ExternalLinks,
 	}
@@ -344,6 +353,8 @@ func ReadEntry(
 		asset_data := result.Asset.Data.(ImageAsset)
 		asset_data.Default.Path = fmt.Sprintf(
 			"%s/%s", data_path, asset_data.Default.Path)
+		asset_data.Default.FsPath = fmt.Sprintf(
+			"%s/%s", fs_directory, asset_data.Default.Path)
 		result.Asset.Data = asset_data
 	}
 	return &result, nil

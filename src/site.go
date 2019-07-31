@@ -3,6 +3,7 @@ package site
 import (
 	"base"
 	"bufio"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"html"
@@ -117,6 +118,11 @@ type EntryInfo struct {
 	Next    base.Entry
 }
 
+type DisplayEntries struct {
+	Row     int
+	Entries []*base.Entry
+}
+
 type SectionContext struct {
 	Year             *base.Year
 	Section          SectionInfo
@@ -140,6 +146,26 @@ func in_array(array []*base.Entry, entry *base.Entry) bool {
 		}
 	}
 	return false
+}
+
+func view_get_image_data_src(image base.ImageInfo) string {
+	data, err := ioutil.ReadFile(image.FsPath)
+	// This should basically lead into 404 error:
+	if err != nil {
+		return fmt.Sprintf(
+			"%s?%s", html.EscapeString(image.Path), image.Checksum)
+	}
+	return fmt.Sprintf(
+		"data:image/%s;base64,%s",
+		image.Type,
+		base64.StdEncoding.EncodeToString(data))
+}
+
+func struct_display_entries(row int, thumbnails []*base.Entry) DisplayEntries {
+	return DisplayEntries{
+		Row:     row,
+		Entries: thumbnails,
+	}
 }
 
 func random_select_section_entries(section *base.Section, amount int) []*base.Entry {
@@ -308,6 +334,8 @@ func create_base_template(name string) *template.Template {
 	functions["view_attribute"] = view_attribute
 	functions["mod_context_no_breadcrumbs"] = mod_context_no_breadcrumbs
 	functions["mod_context_replace_navigation"] = mod_context_replace_navigation
+	functions["view_get_image_data_src"] = view_get_image_data_src
+	functions["struct_display_entries"] = struct_display_entries
 	return t.Funcs(functions)
 }
 
