@@ -15,9 +15,9 @@ yui_minified(
 yui_minified(
     name = "allscripts-min.js",
     srcs = [
-        "js/archive.js",
-        "js/html5placeholder-1.01.jquery.min.js",
         "js/jquery-1.6.2.min.js",
+        "js/html5placeholder-1.01.jquery.min.js",
+        "js/archive.js",
     ],
 )
 
