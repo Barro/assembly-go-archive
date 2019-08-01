@@ -79,6 +79,7 @@ type ImageInfoMeta struct {
 
 type ThumbnailsMeta struct {
 	Default ImageInfoMeta
+	Extra   []ImageInfoMeta
 }
 
 type EntryAsset struct {
@@ -174,6 +175,7 @@ type SectionMeta struct {
 	Name        string
 	Description string
 	IsRanked    bool `json:"is-ranked"`
+	IsOngoing   bool `json:"is-ongoing"`
 	Entries     []string
 }
 
@@ -279,6 +281,7 @@ func ReadSection(
 		Name:        meta.Name,
 		Description: meta.Description,
 		IsRanked:    meta.IsRanked,
+		IsOngoing:   meta.IsOngoing,
 		Entries:     entries,
 	}
 	return &result, nil
@@ -332,6 +335,14 @@ func ReadEntry(
 	if err := validate_image_info_meta(meta.Thumbnails.Default); err != nil {
 		return nil, fmt.Errorf("%s: %v", key, err)
 	}
+	extra_images := make([]base.ImageInfo, len(meta.Thumbnails.Extra))
+	for index, image := range meta.Thumbnails.Extra {
+		if err := validate_image_info_meta(image); err != nil {
+			return nil, fmt.Errorf("Extra image error %s: %v", key, err)
+		}
+		extra_images[index] = get_entry_image(
+			data_path, fs_directory, image)
+	}
 	result := base.Entry{
 		Key:         key,
 		Path:        path_prefix,
@@ -345,6 +356,7 @@ func ReadEntry(
 		Thumbnails: base.Thumbnails{
 			Default: get_entry_image(
 				data_path, fs_directory, meta.Thumbnails.Default),
+			Extra: extra_images,
 		},
 		ExternalLinks: meta.ExternalLinks,
 	}

@@ -29,6 +29,7 @@ type ImageInfo struct {
 
 type Thumbnails struct {
 	Default ImageInfo
+	Extra   []ImageInfo
 }
 
 type ExternalLink struct {
@@ -65,6 +66,7 @@ type Section struct {
 	Name        string
 	Description string
 	IsRanked    bool
+	IsOngoing   bool
 	Entries     []*Entry
 }
 
