@@ -36,6 +36,7 @@ type YoutubeAsset struct {
 
 type ImageAsset struct {
 	Default base.ImageInfo
+	Extra   []base.ImageInfo
 }
 
 type VimeoAsset struct {
@@ -138,8 +139,18 @@ func (asset *EntryAsset) UnmarshalJSON(data []byte) error {
 			return err
 		}
 
+		extra_images := make([]base.ImageInfo, len(asset_data.Data.Extra))
+		for index, image := range asset_data.Data.Extra {
+			if err := validate_image_info_meta(image); err != nil {
+				return fmt.Errorf(
+					"Extra image error %s: %v",
+					asset_data.Data.Default.Filename, err)
+			}
+			extra_images[index] = get_entry_image("", "", image)
+		}
 		image_data := ImageAsset{
 			Default: get_entry_image("", "", asset_data.Data.Default),
+			Extra:   extra_images,
 		}
 		asset.Data = image_data
 	} else if asset_type.Type == "youtube" {
@@ -368,6 +379,12 @@ func ReadEntry(
 		asset_data.Default.FsPath = fmt.Sprintf(
 			"%s/%s", fs_directory, asset_data.Default.Path)
 		result.Asset.Data = asset_data
+		for index, _ := range asset_data.Extra {
+			asset_data.Extra[index].Path = fmt.Sprintf(
+				"%s/%s", data_path, asset_data.Extra[index].Path)
+			asset_data.Extra[index].FsPath = fmt.Sprintf(
+				"%s/%s", fs_directory, asset_data.Extra[index].Path)
+		}
 	}
 	return &result, nil
 }

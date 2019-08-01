@@ -533,7 +533,10 @@ func handle_asset_youtube(site Site, entry base.Entry) string {
 func handle_asset_image(site Site, entry base.Entry) string {
 	image := entry.Asset.Data.(state.ImageAsset)
 	EMBED_TEMPLATE := `
-<img src="%s" alt="%s" title="%s" width="%d" height="%d" />
+<picture>
+    %s
+    <img src="%s" alt="%s" title="%s" width="%d" height="%d" />
+</picture>
 `
 	image_path := fmt.Sprintf(
 		"%s?%s",
@@ -542,6 +545,7 @@ func handle_asset_image(site Site, entry base.Entry) string {
 	image_author_title := author_title(entry)
 	return fmt.Sprintf(
 		EMBED_TEMPLATE,
+		view_image_srcset(image.Extra),
 		html.EscapeString(image_path),
 		html.EscapeString(image_author_title),
 		html.EscapeString(image_author_title),
