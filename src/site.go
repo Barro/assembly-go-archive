@@ -284,6 +284,36 @@ func view_attribute(name string, value string) string {
 	return name + "=\"" + html.EscapeString(value) + "\""
 }
 
+func view_image_srcset(images []base.ImageInfo) string {
+	type SrcSet struct {
+		Srcs  []string
+		Sizes []string
+	}
+	sets := map[string]*SrcSet{}
+	for _, image := range images {
+		srcset, ok := sets[image.Type]
+		if !ok {
+			srcset = &SrcSet{}
+			sets[image.Type] = srcset
+		}
+		srcset.Srcs = append(
+			srcset.Srcs,
+			fmt.Sprintf("%s %dw", html.EscapeString(image.Path), image.Size.X))
+		srcset.Sizes = append(
+			srcset.Sizes, fmt.Sprintf("%dpx", image.Size.X))
+	}
+	result := ""
+	for set_type, set_value := range sets {
+		result += fmt.Sprintf(
+			"<source type='%s' srcset='%s' sizes='%s' />",
+			set_type,
+			strings.Join(set_value.Srcs, ", "),
+			strings.Join(set_value.Sizes, ", "),
+		)
+	}
+	return result
+}
+
 func mod_context_no_breadcrumbs(context PageContext) PageContext {
 	no_breadcrumbs := context
 	no_breadcrumbs.Breadcrumbs = Breadcrumbs{}
@@ -336,6 +366,7 @@ func create_base_template(name string) *template.Template {
 	functions["mod_context_replace_navigation"] = mod_context_replace_navigation
 	functions["view_get_image_data_src"] = view_get_image_data_src
 	functions["struct_display_entries"] = struct_display_entries
+	functions["view_image_srcset"] = view_image_srcset
 	return t.Funcs(functions)
 }
 
