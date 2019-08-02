@@ -261,7 +261,7 @@ h2 {
 }
 
 @media only screen and (max-width: 680px) {
-  .overview-thumbnail-3, .overview-thumbnail-4 {
+  .mediacategory .overview-thumbnail-3, .mediacategory .overview-thumbnail-4 {
     display: none;
   }
 
