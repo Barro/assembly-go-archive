@@ -34,6 +34,12 @@ pkg_tar(
 )
 
 pkg_tar(
+    name = "images-favicon-default-pkg",
+    srcs = ["images/favicon.ico"],
+    strip_prefix = "/static/images/",
+)
+
+pkg_tar(
     name = "images-favicon-pkg",
     srcs = ["images/favicon.ico"],
     strip_prefix = "/static/",
@@ -47,5 +53,9 @@ pkg_tar(
     ],
     package_dir = "static",
     visibility = ["//visibility:public"],
-    deps = [":images-min-pkg", ":images-favicon-pkg"],
+    deps = [
+        ":images-favicon-default-pkg",
+        ":images-favicon-pkg",
+        ":images-min-pkg",
+    ],
 )

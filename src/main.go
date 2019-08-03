@@ -6,9 +6,11 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"server"
 	"site"
 	"state"
@@ -18,6 +20,18 @@ import (
 func RenderTeapot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTeapot)
 	w.Write([]byte("I'm a teapot\n"))
+}
+
+func RenderFaviconFunc(static_dir string) http.HandlerFunc {
+	favicon_path := filepath.Join(static_dir, "favicon.ico")
+	favicon_data, err := ioutil.ReadFile(favicon_path)
+	if err != nil {
+		panic(fmt.Sprintf(
+			"Unable to read favicon from %s: %v", favicon_path, err))
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write(favicon_data)
+	}
 }
 
 func exit_forbidden(w http.ResponseWriter, r *http.Request) {
@@ -268,6 +282,7 @@ func main() {
 			http.StripPrefix(
 				"/site/_static/",
 				http.FileServer(http.Dir(settings.StaticDir)))))
+	http.HandleFunc("/site/favicon.ico", RenderFaviconFunc(settings.StaticDir))
 	http.HandleFunc("/", RenderLinks)
 	listen_addr := fmt.Sprintf("%s:%d", *host, *port)
 	log.Printf("Listening to %s", listen_addr)
