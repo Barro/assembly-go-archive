@@ -3,9 +3,8 @@ This is the second iteration of [Assembly Archive](https://archive.assembly.org/
 ## Pre-requisites
 
 * Likely a modern GNU/Linux system to handle all the build time bash magic.
-* [Bazel](https://bazel.build/)
+* [Bazel](https://bazel.build/) and its dependencies, like JRE.
 * [zopflipng](https://github.com/google/zopfli)
-* [YUI Compressor](https://yui.github.io/yuicompressor/)
 
 Also a recommended requirement is to use
 [iBazel](https://github.com/bazelbuild/bazel-watcher) to get immediate
