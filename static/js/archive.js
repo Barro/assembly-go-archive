@@ -1,5 +1,2 @@
-$(function() {
-    // This should show placeholders in IE.
-    $(':input[placeholder]').placeholder();
-});
-
+// Add your Javascripts here.
+function(){}
