@@ -24,3 +24,7 @@ http_file(
         "https://github.com/yui/yuicompressor/releases/download/v2.4.8/yuicompressor-2.4.8.jar",
     ],
 )
+
+load("//static:static.bzl", "find_zopflipng")
+
+find_zopflipng(name = "zopflipng")

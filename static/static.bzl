@@ -50,7 +50,7 @@ def _zopflipng_minified_impl(ctx):
         ctx.actions.run(
             outputs = [outfile],
             inputs = [infile],
-            executable = "zopflipng",
+            executable = ctx.file.zopflipng,
             arguments = ["-m", "-y", infile.path, outfile.path],
         )
         outfiles.append(outfile)
@@ -61,6 +61,24 @@ zopflipng_minified = rule(
         "srcs": attr.label_list(
             allow_files = True,
         ),
+        "zopflipng": attr.label(
+            default = "@zopflipng",
+            allow_single_file = True,
+        ),
     },
     implementation = _zopflipng_minified_impl,
+)
+
+def _find_zopflipng_impl(ctx):
+    path = ctx.which("zopflipng")
+    if path == None:
+        fail("zopflipng command is required!")
+    ctx.symlink(path, "zopflipng")
+    ctx.file("BUILD.bazel", content = """\
+exports_files(["zopflipng"])
+""")
+
+find_zopflipng = repository_rule(
+    implementation = _find_zopflipng_impl,
+    local = True,
 )
