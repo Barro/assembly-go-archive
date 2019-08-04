@@ -202,6 +202,7 @@ h2 {
   border-top: 1px solid #444;
   margin-top: 30px;
   text-align: center;
+  clear: both;
 }
 
 .gallery-navigation-link {
