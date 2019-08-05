@@ -298,7 +298,11 @@ func view_image_srcset(images []base.ImageInfo) string {
 		}
 		srcset.Srcs = append(
 			srcset.Srcs,
-			fmt.Sprintf("%s %dw", html.EscapeString(image.Path), image.Size.X))
+			fmt.Sprintf(
+				"%s?%s %dw",
+				html.EscapeString(image.Path),
+				html.EscapeString(image.Checksum),
+				image.Size.X))
 		srcset.Sizes = append(
 			srcset.Sizes, fmt.Sprintf("%dpx", image.Size.X))
 	}
@@ -545,7 +549,7 @@ func handle_asset_image(site Site, entry base.Entry) string {
 	image_author_title := author_title(entry)
 	return fmt.Sprintf(
 		EMBED_TEMPLATE,
-		view_image_srcset(image.Extra),
+		view_image_srcset(image.Sources),
 		html.EscapeString(image_path),
 		html.EscapeString(image_author_title),
 		html.EscapeString(image_author_title),

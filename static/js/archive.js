@@ -1,2 +1,2 @@
 // Add your Javascripts here.
-function(){}
+function a(){}

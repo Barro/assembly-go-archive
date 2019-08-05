@@ -7,7 +7,7 @@
     {{/* TODO näytä useita thumbnail-vaihtoehtoja? */}}
     {{$thumbnail := .Thumbnails.Default}}
     <picture>
-      {{view_image_srcset .Thumbnails.Extra}}
+      {{view_image_srcset .Thumbnails.Sources}}
       <img class="thumbnail-image"
            src="{{$thumbnail.Path|html}}?{{$thumbnail.Checksum}}"
            alt="{{.|view_author_title}}"

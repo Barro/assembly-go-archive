@@ -29,7 +29,7 @@ type ImageInfo struct {
 
 type Thumbnails struct {
 	Default ImageInfo
-	Extra   []ImageInfo
+	Sources []ImageInfo
 }
 
 type ExternalLink struct {

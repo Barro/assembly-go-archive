@@ -36,7 +36,7 @@ type YoutubeAsset struct {
 
 type ImageAsset struct {
 	Default base.ImageInfo
-	Extra   []base.ImageInfo
+	Sources []base.ImageInfo
 }
 
 type VimeoAsset struct {
@@ -80,7 +80,7 @@ type ImageInfoMeta struct {
 
 type ThumbnailsMeta struct {
 	Default ImageInfoMeta
-	Extra   []ImageInfoMeta
+	Sources []ImageInfoMeta
 }
 
 type EntryAsset struct {
@@ -139,18 +139,18 @@ func (asset *EntryAsset) UnmarshalJSON(data []byte) error {
 			return err
 		}
 
-		extra_images := make([]base.ImageInfo, len(asset_data.Data.Extra))
-		for index, image := range asset_data.Data.Extra {
+		image_sources := make([]base.ImageInfo, len(asset_data.Data.Sources))
+		for index, image := range asset_data.Data.Sources {
 			if err := validate_image_info_meta(image); err != nil {
 				return fmt.Errorf(
-					"Extra image error %s: %v",
+					"Source image error %s: %v",
 					asset_data.Data.Default.Filename, err)
 			}
-			extra_images[index] = get_entry_image("", "", image)
+			image_sources[index] = get_entry_image("", "", image)
 		}
 		image_data := ImageAsset{
 			Default: get_entry_image("", "", asset_data.Data.Default),
-			Extra:   extra_images,
+			Sources: image_sources,
 		}
 		asset.Data = image_data
 	} else if asset_type.Type == "youtube" {
@@ -346,12 +346,12 @@ func ReadEntry(
 	if err := validate_image_info_meta(meta.Thumbnails.Default); err != nil {
 		return nil, fmt.Errorf("%s: %v", key, err)
 	}
-	extra_images := make([]base.ImageInfo, len(meta.Thumbnails.Extra))
-	for index, image := range meta.Thumbnails.Extra {
+	image_sources := make([]base.ImageInfo, len(meta.Thumbnails.Sources))
+	for index, image := range meta.Thumbnails.Sources {
 		if err := validate_image_info_meta(image); err != nil {
-			return nil, fmt.Errorf("Extra image error %s: %v", key, err)
+			return nil, fmt.Errorf("Source image error %s: %v", key, err)
 		}
-		extra_images[index] = get_entry_image(
+		image_sources[index] = get_entry_image(
 			data_path, fs_directory, image)
 	}
 	result := base.Entry{
@@ -367,7 +367,7 @@ func ReadEntry(
 		Thumbnails: base.Thumbnails{
 			Default: get_entry_image(
 				data_path, fs_directory, meta.Thumbnails.Default),
-			Extra: extra_images,
+			Sources: image_sources,
 		},
 		ExternalLinks: meta.ExternalLinks,
 	}
@@ -379,11 +379,11 @@ func ReadEntry(
 		asset_data.Default.FsPath = fmt.Sprintf(
 			"%s/%s", fs_directory, asset_data.Default.Path)
 		result.Asset.Data = asset_data
-		for index, _ := range asset_data.Extra {
-			asset_data.Extra[index].Path = fmt.Sprintf(
-				"%s/%s", data_path, asset_data.Extra[index].Path)
-			asset_data.Extra[index].FsPath = fmt.Sprintf(
-				"%s/%s", fs_directory, asset_data.Extra[index].Path)
+		for index, _ := range asset_data.Sources {
+			asset_data.Sources[index].Path = fmt.Sprintf(
+				"%s/%s", data_path, asset_data.Sources[index].Path)
+			asset_data.Sources[index].FsPath = fmt.Sprintf(
+				"%s/%s", fs_directory, asset_data.Sources[index].Path)
 		}
 	}
 	return &result, nil

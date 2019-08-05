@@ -119,8 +119,14 @@ func StripPrefix(prefix string, handler http.HandlerFunc) http.HandlerFunc {
 
 func AddCacheHeaders(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		header := w.Header()
-		header.Add("Cache-Control", "immutable, public, max-age=2592000")
+		// Only add cache headers when it's likely that the query
+		// string includes the checksum (36 bits of base64 encoded
+		// data) of the requested resource.
+		if len(r.URL.RawQuery) >= 6 {
+			header := w.Header()
+			header.Add(
+				"Cache-Control", "immutable, public, max-age=2592000")
+		}
 		h.ServeHTTP(w, r)
 	})
 }
