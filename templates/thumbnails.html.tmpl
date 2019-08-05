@@ -3,7 +3,10 @@
 {{$ctx:=.}}
 {{range $col, $element := .Entries}}
 <div class="video overview-thumbnail-{{$col}}">
-  <a class="thumbnail" href="{{.Path|html}}">
+  <a class="thumbnail"
+     href="{{.Path|html}}"
+     title="{{.|view_author_title}}"
+     >
     {{/* TODO näytä useita thumbnail-vaihtoehtoja? */}}
     {{$thumbnail := .Thumbnails.Default}}
     <picture>
@@ -11,7 +14,6 @@
       <img class="thumbnail-image"
            src="{{$thumbnail.Path|html}}?{{$thumbnail.Checksum}}"
            alt="{{.|view_author_title}}"
-           title="{{.|view_author_title}}"
            width="{{$thumbnail.Size.X}}"
            height="{{$thumbnail.Size.Y}}"
            />
