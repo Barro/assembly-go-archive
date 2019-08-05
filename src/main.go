@@ -30,6 +30,7 @@ func RenderFaviconFunc(static_dir string) http.HandlerFunc {
 			"Unable to read favicon from %s: %v", favicon_path, err))
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		server.AddCacheHeadersFunc(w, r)
 		w.Write(favicon_data)
 	}
 }
