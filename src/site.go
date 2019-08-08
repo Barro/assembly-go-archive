@@ -60,13 +60,18 @@ type PageNavigation struct {
 }
 
 type PageContext struct {
-	Path             string
-	Breadcrumbs      Breadcrumbs
-	Title            string
-	SiteRoot         string
-	Static           map[string]string
-	CurrentYear      int
-	Description      string
+	Path        string
+	Breadcrumbs Breadcrumbs
+	Title       string
+	SiteRoot    string
+	Static      map[string]string
+	CurrentYear int
+	Description string
+	// Prefertches are used on gallery like pages to fetch the next
+	// and previous possible pages. They must point to resources that
+	// can be cached, so these are only applicable for sections and
+	// entries.
+	Prefetches       []string
 	SiteState        *state.SiteState
 	Navigation       PageNavigation
 	YearlyNavigation YearlyNavigation
@@ -309,6 +314,17 @@ func view_image_srcset(images []base.ImageInfo) string {
 		)
 	}
 	return result
+}
+
+func add_prefetch_links(context *PageContext) {
+	var result []string
+	if len(context.Navigation.Prev.Path) > 0 {
+		result = append(result, context.Navigation.Prev.Path)
+	}
+	if len(context.Navigation.Next.Path) > 0 {
+		result = append(result, context.Navigation.Next.Path)
+	}
+	context.Prefetches = result
 }
 
 func mod_context_no_breadcrumbs(context PageContext) PageContext {
@@ -613,6 +629,7 @@ func handle_entry(
 		Asset:   asset_handler(site, entry.Curr),
 		Context: page_context,
 	}
+	add_prefetch_links(&context.Context)
 	// Entry can be cached for a short while, as there is no
 	// randomness in it.
 	add_short_cache_time(w)
@@ -728,6 +745,7 @@ func handle_section(
 		Section:          section,
 		Context:          page_context,
 	}
+	add_prefetch_links(&context.Context)
 	// Section can be cached for a short while, as there is no
 	// randomness in it.
 	add_short_cache_time(w)

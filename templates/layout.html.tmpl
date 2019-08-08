@@ -30,6 +30,10 @@
       href="{{.Context.SiteRoot}}/_static/allstyles-min.css?{{index .Context.Static "allstyles-min.css"}}" />
 <link rel="preload"
       href="{{.Context.SiteRoot}}/_static/allscripts-min.js?{{index .Context.Static "allscripts-min.js"}}" />
+{{range $col, $path := .Context.Prefetches}}
+<link rel="prefetch"
+      href="{{$path|html}}" />
+{{end}}
 
 <meta name="viewport" content="width=640" />
 
