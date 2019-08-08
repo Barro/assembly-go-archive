@@ -227,20 +227,13 @@ func peek_section_entries(section base.Section, amount int) []*base.Entry {
 	return result
 }
 
-/*
-{
-    "title": "Title",
-    "author": "Author",
-    "asset": "<embed>raw-asset-html</embed>",
-    "thumbnail": {"path": "filename.jpeg", "size": "160x90", "type": "image/jpeg"},
-    "thumbnails": [{"path": "filename.png", "size": "160x90", "type": "image/png"}],
-    "description": "<p>raw-html</p>",
-    "external": [
-        {"Download": ["<p>raw-html</p>"]},
-        {"View on": ["<p>raw-html</p>"]},
-    ],
+// Adds a short cache control header value. This is used for pages
+// that can change, but will very likely not change unless the site
+// layout or page contents is updated.
+func add_short_cache_time(w http.ResponseWriter) {
+	header := w.Header()
+	header.Add("Cache-Control", "public, max-age=60")
 }
-*/
 
 func author_title(entry base.Entry) string {
 	var author_title string
@@ -620,6 +613,9 @@ func handle_entry(
 		Asset:   asset_handler(site, entry.Curr),
 		Context: page_context,
 	}
+	// Entry can be cached for a short while, as there is no
+	// randomness in it.
+	add_short_cache_time(w)
 	err_template := render_template(w, site.Templates.Entry, context)
 	if err_template != nil {
 		server.Ise(w)
@@ -732,6 +728,9 @@ func handle_section(
 		Section:          section,
 		Context:          page_context,
 	}
+	// Section can be cached for a short while, as there is no
+	// randomness in it.
+	add_short_cache_time(w)
 	err_template := render_template(w, site.Templates.Section, context)
 	if err_template != nil {
 		server.Ise(w)
