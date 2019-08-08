@@ -60,17 +60,13 @@ type PageNavigation struct {
 }
 
 type PageContext struct {
-	Path        string
-	Breadcrumbs Breadcrumbs
-	Title       string
-	SiteRoot    string
-	Static      map[string]string
-	CurrentYear int
-	Description string
-	// Prefertches are used on gallery like pages to fetch the next
-	// and previous possible pages. They must point to resources that
-	// can be cached, so these are only applicable for sections and
-	// entries.
+	Path             string
+	Breadcrumbs      Breadcrumbs
+	Title            string
+	SiteRoot         string
+	Static           map[string]string
+	CurrentYear      int
+	Description      string
 	Prefetches       []string
 	SiteState        *state.SiteState
 	Navigation       PageNavigation
@@ -1075,9 +1071,13 @@ func handle_main(
 		}
 	}
 	breadcrumbs_last := ""
+	var prefetches []string
 	if len(years) > 0 {
 		breadcrumbs_last = fmt.Sprintf(
 			"%d-%d", years[len(years)-1].Year, years[0].Year)
+		// Prefetch the latest year so that users can hopefully get it
+		// faster.
+		prefetches = []string{years[0].Path}
 	}
 	page_context := PageContext{
 		Path:     path_elements[""],
@@ -1094,6 +1094,7 @@ func handle_main(
 			},
 		},
 		YearlyNavigation: get_yearly_navigation(site, 0),
+		Prefetches:       prefetches,
 	}
 	context := MainContext{
 		Galleries:   gallery_thumbnails,
