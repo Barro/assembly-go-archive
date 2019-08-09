@@ -29,6 +29,9 @@ var MAX_MAIN_SECTION_ENTRIES = 2
 
 var YEARLY_NAVIGATION_YEARS = 7
 
+var CACHE_TIME_STATIC_PAGE_S = 120
+var CACHE_TIME_DYNAMIC_PAGE_S = 30
+
 type SiteTemplates struct {
 	Main        *template.Template
 	Year        *template.Template
@@ -231,9 +234,9 @@ func peek_section_entries(section base.Section, amount int) []*base.Entry {
 // Adds a short cache control header value. This is used for pages
 // that can change, but will very likely not change unless the site
 // layout or page contents is updated.
-func add_short_cache_time(w http.ResponseWriter) {
+func add_cache_time(w http.ResponseWriter, seconds int) {
 	header := w.Header()
-	header.Add("Cache-Control", "public, max-age=60")
+	header.Add("Cache-Control", fmt.Sprintf("public, max-age=%d", seconds))
 }
 
 func author_title(entry base.Entry) string {
@@ -626,9 +629,7 @@ func handle_entry(
 		Context: page_context,
 	}
 	add_prefetch_links(&context.Context)
-	// Entry can be cached for a short while, as there is no
-	// randomness in it.
-	add_short_cache_time(w)
+	add_cache_time(w, CACHE_TIME_STATIC_PAGE_S)
 	err_template := render_template(w, site.Templates.Entry, context)
 	if err_template != nil {
 		server.Ise(w)
@@ -742,9 +743,7 @@ func handle_section(
 		Context:          page_context,
 	}
 	add_prefetch_links(&context.Context)
-	// Section can be cached for a short while, as there is no
-	// randomness in it.
-	add_short_cache_time(w)
+	add_cache_time(w, CACHE_TIME_STATIC_PAGE_S)
 	err_template := render_template(w, site.Templates.Section, context)
 	if err_template != nil {
 		server.Ise(w)
@@ -972,6 +971,7 @@ func handle_year(
 		Year:      year,
 		Context:   page_context,
 	}
+	add_cache_time(w, CACHE_TIME_DYNAMIC_PAGE_S)
 	err_template := render_template(w, site.Templates.Year, context)
 	if err_template != nil {
 		server.Ise(w)
@@ -1102,6 +1102,7 @@ func handle_main(
 		YearsAfter:  *years_after,
 		Context:     page_context,
 	}
+	add_cache_time(w, CACHE_TIME_DYNAMIC_PAGE_S)
 	err_template := render_template(w, site.Templates.Main, context)
 	if err_template != nil {
 		server.Ise(w)
