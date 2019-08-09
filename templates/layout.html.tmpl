@@ -27,12 +27,14 @@
 <!-- <link rel="stylesheet" href="/static/css/style.css" /> -->
 
 <link rel="stylesheet"
-      href="{{.Context.SiteRoot}}/_static/allstyles-min.css?{{index .Context.Static "allstyles-min.css"}}" />
+      href="{{.Context.SiteRoot|html}}/_static/allstyles-min.css?{{index .Context.Static "allstyles-min.css"}}" />
 <link rel="preload"
-      href="{{.Context.SiteRoot}}/_static/allscripts-min.js?{{index .Context.Static "allscripts-min.js"}}" />
-{{range $col, $path := .Context.Prefetches}}
+      href="{{.Context.SiteRoot}}/_static/allscripts-min.js?{{index .Context.Static "allscripts-min.js"}}"
+      as="script" />
+{{range $col, $prefetch := .Context.Prefetches}}
 <link rel="prefetch"
-      href="{{$path|html}}" />
+      href="{{$prefetch.Path|html}}"
+      as="{{$prefetch.Type|html}}" />
 {{end}}
 
 <meta name="viewport" content="width=640" />

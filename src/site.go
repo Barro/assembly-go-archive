@@ -62,6 +62,11 @@ type PageNavigation struct {
 	Next InternalLink
 }
 
+type Prefetch struct {
+	Path string
+	Type string
+}
+
 type PageContext struct {
 	Path             string
 	Breadcrumbs      Breadcrumbs
@@ -70,7 +75,7 @@ type PageContext struct {
 	Static           map[string]string
 	CurrentYear      int
 	Description      string
-	Prefetches       []string
+	Prefetches       []Prefetch
 	SiteState        *state.SiteState
 	Navigation       PageNavigation
 	YearlyNavigation YearlyNavigation
@@ -297,7 +302,7 @@ func view_image_srcset(images []base.ImageInfo) string {
 			srcset.Srcs,
 			fmt.Sprintf(
 				"%s?%s %dw",
-				html.EscapeString(image.Path),
+				html.EscapeString(strings.Replace(image.Path, " ", "%20", -1)),
 				html.EscapeString(image.Checksum),
 				image.Size.X))
 		srcset.Sizes = append(
@@ -316,12 +321,18 @@ func view_image_srcset(images []base.ImageInfo) string {
 }
 
 func add_prefetch_links(context *PageContext) {
-	var result []string
+	var result []Prefetch
 	if len(context.Navigation.Prev.Path) > 0 {
-		result = append(result, context.Navigation.Prev.Path)
+		result = append(result, Prefetch{
+			Path: context.Navigation.Prev.Path,
+			Type: "document",
+		})
 	}
 	if len(context.Navigation.Next.Path) > 0 {
-		result = append(result, context.Navigation.Next.Path)
+		result = append(result, Prefetch{
+			Path: context.Navigation.Next.Path,
+			Type: "document",
+		})
 	}
 	context.Prefetches = result
 }
@@ -1071,13 +1082,16 @@ func handle_main(
 		}
 	}
 	breadcrumbs_last := ""
-	var prefetches []string
+	var prefetches []Prefetch
 	if len(years) > 0 {
 		breadcrumbs_last = fmt.Sprintf(
 			"%d-%d", years[len(years)-1].Year, years[0].Year)
 		// Prefetch the latest year so that users can hopefully get it
 		// faster.
-		prefetches = []string{years[0].Path}
+		prefetches = []Prefetch{Prefetch{
+			Path: years[0].Path,
+			Type: "document",
+		}}
 	}
 	page_context := PageContext{
 		Path:     path_elements[""],
