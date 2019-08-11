@@ -1182,6 +1182,7 @@ func SiteRenderer(settings base.SiteSettings, state *state.SiteState) http.Handl
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "text/html")
 		route_request(site, w, r)
 	}
 }

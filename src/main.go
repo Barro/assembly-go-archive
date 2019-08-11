@@ -3,18 +3,21 @@ package main
 import (
 	"api"
 	"base"
-	"encoding/base64"
+	"compress/gzip"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"server"
 	"site"
 	"state"
-	"strconv"
+	"strings"
+	"sync"
 )
 
 func RenderTeapot(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +36,54 @@ func RenderFaviconFunc(static_dir string) http.HandlerFunc {
 		server.AddCacheHeadersFunc(w, r)
 		w.Write(favicon_data)
 	}
+}
+
+var gzPool = sync.Pool{
+	New: func() interface{} {
+		w := gzip.NewWriter(ioutil.Discard)
+		return w
+	},
+}
+
+type GzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w *GzipResponseWriter) WriteHeader(status int) {
+	w.Header().Del("Content-Length")
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *GzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func CompressGzipHandler(
+	match_paths *regexp.Regexp,
+	next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if !match_paths.MatchString(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+
+		gz := gzPool.Get().(*gzip.Writer)
+		defer gzPool.Put(gz)
+
+		gz.Reset(w)
+		defer gz.Close()
+		gzip_writer := GzipResponseWriter{
+			Writer:         gz,
+			ResponseWriter: w,
+		}
+		next.ServeHTTP(&gzip_writer, r)
+	})
 }
 
 func exit_forbidden(w http.ResponseWriter, r *http.Request) {
@@ -68,171 +119,6 @@ func exit(w http.ResponseWriter, r *http.Request) {
 	os.Exit(0)
 }
 
-func create_sections(site_root string, year base.Year) []*base.Section {
-	entry := base.Entry{
-		Path:   "/2018/section/entry",
-		Key:    "entry",
-		Title:  "title",
-		Author: "author",
-		Asset: base.Asset{
-			Type: "youtube",
-			Data: state.YoutubeAsset{
-				Id: "idOK0JlRhZY",
-			},
-		},
-		Description: "description",
-		ExternalLinks: []base.ExternalLinksSection{
-			base.ExternalLinksSection{
-				Name: "Download",
-				Links: []base.ExternalLink{
-					base.ExternalLink{
-						Href:     "http://media.assembly.org/vod/2015/Compos/2049_Demo_HoldAndModify_by_CNCD__Fairlight.mp4",
-						Contents: "HQ video",
-						Notes:    "(media.assembly.org)",
-					},
-				},
-			},
-			base.ExternalLinksSection{
-				Name: "View on",
-				Links: []base.ExternalLink{
-					base.ExternalLink{
-						Href:     "http://www.youtube.com/watch?v=idOK0JlRhZY",
-						Contents: "Youtube",
-						Notes:    "",
-					},
-				},
-			},
-		},
-		Thumbnails: base.Thumbnails{
-			Default: base.ImageInfo{
-				Path:     site_root + "/_data/2018/music-background.jpeg",
-				Checksum: base64.RawURLEncoding.EncodeToString([]byte("abba")),
-				Size: base.Resolution{
-					X: 160,
-					Y: 90,
-				},
-				Type: "image/png",
-			},
-		},
-	}
-
-	entry_image := base.Entry{
-		Path:   "/2018/section/entry",
-		Key:    "entry-image",
-		Title:  "title-image",
-		Author: "author'\"-image",
-		Asset: base.Asset{
-			Type: "image",
-			Data: state.ImageAsset{
-				Default: base.ImageInfo{
-					Path:     "2018/music-background.jpeg",
-					Checksum: "asdf",
-					Size: base.Resolution{
-						X: 640,
-						Y: 360,
-					},
-					Type: "image/jpeg",
-				},
-			},
-		},
-		Description: "description-image",
-		Thumbnails: base.Thumbnails{
-			Default: base.ImageInfo{
-				Path:     site_root + "/_data/2018/music-background.jpeg",
-				Checksum: base64.RawURLEncoding.EncodeToString([]byte("baab")),
-				Size: base.Resolution{
-					X: 160,
-					Y: 90,
-				},
-				Type: "image/png",
-			},
-		},
-	}
-
-	var sections []*base.Section
-	section_ranked := base.Section{
-		Path:        "/2018/section-ranked/",
-		Key:         "section-ranked",
-		Name:        "Section ranked",
-		Description: "Here is a decent ranked description!",
-		IsRanked:    true,
-	}
-	section_unranked := base.Section{
-		Path:        "/2018/section-unranked/",
-		Key:         "section-unranked",
-		Name:        "Section unranked",
-		Description: "Here is a decent unranked description!",
-		IsRanked:    false,
-	}
-	for i := 0; i < 25; i++ {
-		new_section_ranked := section_ranked
-		new_section_ranked.Key = new_section_ranked.Key + "-" + strconv.Itoa(i)
-		new_section_ranked.Name = new_section_ranked.Name + " " + strconv.Itoa(i)
-		var entries_ranked []*base.Entry
-		for i := 0; i < 70; i++ {
-			new_entry := entry
-			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
-			new_entry.Title = new_entry.Title + "-" + strconv.Itoa(i)
-			entries_ranked = append(entries_ranked, &new_entry)
-			new_entry_image := entry_image
-			new_entry_image.Key = new_entry_image.Key + "-" + strconv.Itoa(i)
-			new_entry_image.Title = new_entry_image.Title + "-" + strconv.Itoa(i)
-			entries_ranked = append(entries_ranked, &new_entry_image)
-		}
-		new_section_ranked.Entries = entries_ranked
-		sections = append(sections, &new_section_ranked)
-
-		new_section_unranked := section_unranked
-		new_section_unranked.Key = new_section_unranked.Key + "-" + strconv.Itoa(i)
-		new_section_unranked.Name = new_section_unranked.Name + " " + strconv.Itoa(i)
-		copy(new_section_unranked.Entries, section_unranked.Entries)
-		var entries_unranked []*base.Entry
-		for i := 0; i < 20; i++ {
-			new_entry := entry
-			new_entry.Key = new_entry.Key + "-" + strconv.Itoa(i)
-			new_entry.Title = new_entry.Title + "-" + strconv.Itoa(i)
-			entries_unranked = append(entries_unranked, &new_entry)
-		}
-		new_section_unranked.Entries = entries_unranked
-		sections = append(sections, &new_section_unranked)
-	}
-	return sections
-}
-
-func adjust_paths(years []*base.Year) {
-	for _, year := range years {
-		for _, section := range year.Sections {
-			section.Path = year.Path + "/" + section.Key
-			new_entries := section.Entries
-			section.Entries = new_entries
-			for i, entry := range section.Entries {
-				new_entry := *entry
-				new_entry.Path = section.Path + "/" + new_entry.Key
-				section.Entries[i] = &new_entry
-			}
-		}
-	}
-}
-
-func seed_site_state(site_root string) state.SiteState {
-	var years []*base.Year
-	for i := 2030; i >= 1990; i-- {
-		new_year := base.Year{
-			Year: i,
-			Path: site_root + "/" + strconv.Itoa(i),
-			Key:  strconv.Itoa(i),
-			Name: strconv.Itoa(i),
-		}
-		new_year.Sections = create_sections(site_root, new_year)
-		years = append(years, &new_year)
-	}
-	state := state.SiteState{
-		Years: years,
-	}
-	adjust_paths(state.Years)
-	return state
-}
-
 func main() {
 	host := flag.String("host", "localhost", "Host interface to listen to")
 	port := flag.Int("port", 8080, "Port to listen to")
@@ -264,26 +150,37 @@ func main() {
 	if err_state != nil {
 		log.Fatal(err_state)
 	}
-	//state := seed_site_state(settings.SiteRoot)
 
 	http.HandleFunc("/api/", server.StripPrefix("/api/",
 		server.BasicAuth(*authfile, api.Renderer(settings, state))))
-	http.HandleFunc("/site/", server.StripPrefix("/site/",
-		site.SiteRenderer(settings, state)))
+
+	http.Handle("/site/",
+		CompressGzipHandler(
+			regexp.MustCompile(""),
+			server.StripPrefix("/site/",
+				http.HandlerFunc(site.SiteRenderer(settings, state)))))
 	http.HandleFunc("/teapot/", RenderTeapot)
 	http.Handle(
 		"/site/_data/",
 		server.AddCacheHeaders(
-			http.StripPrefix(
-				"/site/_data/",
-				http.FileServer(http.Dir(settings.DataDir)))))
+			CompressGzipHandler(
+				regexp.MustCompile("(ico|js|css|json)$"),
+				http.StripPrefix(
+					"/site/_data/",
+					http.FileServer(http.Dir(settings.DataDir))))))
 	http.Handle(
 		"/site/_static/",
 		server.AddCacheHeaders(
-			http.StripPrefix(
-				"/site/_static/",
-				http.FileServer(http.Dir(settings.StaticDir)))))
-	http.HandleFunc("/site/favicon.ico", RenderFaviconFunc(settings.StaticDir))
+			CompressGzipHandler(
+				regexp.MustCompile("(ico|js|css|json)$"),
+				http.StripPrefix(
+					"/site/_static/",
+					http.FileServer(http.Dir(settings.StaticDir))))))
+	http.Handle(
+		"/site/favicon.ico",
+		CompressGzipHandler(
+			regexp.MustCompile(""),
+			http.HandlerFunc(RenderFaviconFunc(settings.StaticDir))))
 	http.HandleFunc("/", RenderLinks)
 	listen_addr := fmt.Sprintf("%s:%d", *host, *port)
 	log.Printf("Listening to %s", listen_addr)
