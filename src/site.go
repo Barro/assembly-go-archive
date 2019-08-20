@@ -294,33 +294,45 @@ func view_attribute(name string, value string) string {
 
 func view_image_srcset(images []base.ImageInfo) string {
 	type SrcSet struct {
-		Srcs  []string
-		Sizes []string
+		Srcs  bytes.Buffer
+		Sizes bytes.Buffer
 	}
 	sets := map[string]*SrcSet{}
+	var last_set *SrcSet = nil
+	last_type := ""
 	for _, image := range images {
-		srcset, ok := sets[image.Type]
-		if !ok {
-			srcset = &SrcSet{}
-			sets[image.Type] = srcset
+		srcset := last_set
+		if image.Type != last_type {
+			var ok bool
+			srcset, ok = sets[image.Type]
+			if !ok {
+				srcset = &SrcSet{}
+				sets[image.Type] = srcset
+			}
+			last_set = srcset
+			last_type = image.Type
+		} else {
+			srcset.Srcs.WriteString(", ")
+			srcset.Sizes.WriteString(", ")
 		}
-		srcset.Srcs = append(
-			srcset.Srcs,
-			fmt.Sprintf(
-				"%s?%s %dw",
-				html.EscapeString(strings.Replace(image.Path, " ", "%20", -1)),
-				html.EscapeString(image.Checksum),
-				image.Size.X))
-		srcset.Sizes = append(
-			srcset.Sizes, fmt.Sprintf("%dpx", image.Size.X))
+		srcset.Srcs.WriteString(
+			html.EscapeString(strings.Replace(image.Path, " ", "%20", -1)))
+		srcset.Srcs.Write([]byte("?"))
+		srcset.Srcs.WriteString(html.EscapeString(image.Checksum))
+		srcset.Srcs.Write([]byte(" "))
+		size_x_str := []byte(strconv.Itoa(image.Size.X))
+		srcset.Srcs.Write(size_x_str)
+		srcset.Srcs.Write([]byte("w"))
+		srcset.Sizes.Write(size_x_str)
+		srcset.Sizes.Write([]byte("px"))
 	}
 	result := ""
 	for set_type, set_value := range sets {
 		result += fmt.Sprintf(
 			"<source type='%s' srcset='%s' sizes='%s' />",
 			set_type,
-			strings.Join(set_value.Srcs, ", "),
-			strings.Join(set_value.Sizes, ", "),
+			set_value.Srcs.String(),
+			set_value.Sizes.String(),
 		)
 	}
 	return result
