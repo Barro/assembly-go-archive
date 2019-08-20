@@ -3,6 +3,7 @@ package site
 import (
 	"base"
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -260,19 +261,24 @@ func view_author_title(entry base.Entry) string {
 	return html.EscapeString(author_title(entry))
 }
 
+var WORDS_MATCH = regexp.MustCompile("(\\w+)|(\\W+)")
+
 func view_cut_string(target string, max_length int) string {
 	MAX_WORD_LENGTH := 23
-	words := regexp.MustCompile("(\\w+)|(\\W+)").FindAllString(target, -1)
-	var short_words []string
+	if len(target) <= MAX_WORD_LENGTH {
+		return target
+	}
+	words := WORDS_MATCH.FindAllString(target, -1)
+	var buffer bytes.Buffer
 	for _, word := range words {
 		for len(word) > MAX_WORD_LENGTH {
-			short_words = append(short_words, word[:MAX_WORD_LENGTH])
-			short_words = append(short_words, "\u200B")
+			buffer.WriteString(word[:MAX_WORD_LENGTH])
+			buffer.WriteString("\u200B")
 			word = word[MAX_WORD_LENGTH:]
 		}
-		short_words = append(short_words, word)
+		buffer.WriteString(word)
 	}
-	word_cut_data := strings.Join(short_words, "")
+	word_cut_data := buffer.String()
 	if len(word_cut_data) < max_length {
 		return word_cut_data
 	}
