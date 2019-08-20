@@ -308,6 +308,11 @@ func view_image_srcset(images []base.ImageInfo) string {
 			if !ok {
 				srcset = &SrcSet{}
 				sets[image.Type] = srcset
+				srcset.Srcs.Grow(768)
+				srcset.Sizes.Grow(64)
+			} else {
+				srcset.Srcs.WriteString(", ")
+				srcset.Sizes.WriteString(", ")
 			}
 			last_set = srcset
 			last_type = image.Type
