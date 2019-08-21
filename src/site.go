@@ -33,6 +33,10 @@ var YEARLY_NAVIGATION_YEARS = 7
 var CACHE_TIME_STATIC_PAGE_S = 120
 var CACHE_TIME_DYNAMIC_PAGE_S = 30
 
+var MAIN_DESCRIPTION = regexp.MustCompile(`\s+`).ReplaceAllString(
+	`Assembly Archive offers a way to browse entries
+	from all the years that Assembly has had parties on.`, " ")
+
 type SiteTemplates struct {
 	Main        *template.Template
 	Year        *template.Template
@@ -72,10 +76,10 @@ type PageContext struct {
 	Path             string
 	Breadcrumbs      Breadcrumbs
 	Title            string
+	Description      string
 	SiteRoot         string
 	Static           map[string]string
 	CurrentYear      int
-	Description      string
 	Prefetches       []Prefetch
 	SiteState        *state.SiteState
 	Navigation       PageNavigation
@@ -1116,10 +1120,12 @@ func handle_main(
 			Type: "document",
 		}}
 	}
+
 	page_context := PageContext{
-		Path:     path_elements[""],
-		SiteRoot: site.Settings.SiteRoot,
-		Static:   site.Static,
+		Path:        path_elements[""],
+		Description: MAIN_DESCRIPTION,
+		SiteRoot:    site.Settings.SiteRoot,
+		Static:      site.Static,
 		Navigation: PageNavigation{
 			Prev: *years_before,
 			Next: *years_after,
