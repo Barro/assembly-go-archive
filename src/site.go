@@ -742,8 +742,12 @@ func handle_section(
 
 	title := section.Year.Key + " / " + section.Curr.Name
 	page_context := PageContext{
-		Path:     path_elements[""],
-		Title:    title,
+		Path:  path_elements[""],
+		Title: title,
+		Description: fmt.Sprintf(
+			"Entries for year %d section %s",
+			section.Year.Year,
+			section.Curr.Name),
 		SiteRoot: site.Settings.SiteRoot,
 		Static:   site.Static,
 		Breadcrumbs: Breadcrumbs{
@@ -961,8 +965,11 @@ func handle_year(
 	}
 
 	page_context := PageContext{
-		Path:     path_elements[""],
-		Title:    year.Curr.Key,
+		Path:  path_elements[""],
+		Title: year.Curr.Key,
+		Description: fmt.Sprintf(
+			"Competitions and other events for %d Assembly parties",
+			year.Curr.Year),
 		SiteRoot: site.Settings.SiteRoot,
 		Static:   site.Static,
 		Breadcrumbs: Breadcrumbs{
