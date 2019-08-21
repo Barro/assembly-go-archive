@@ -1201,7 +1201,6 @@ func handle_not_found(
 		Static:           site.Static,
 		YearlyNavigation: get_yearly_navigation(site, 0),
 	}
-	fmt.Println(r.URL.EscapedPath())
 	context := NotFoundContext{
 		Parent: fmt.Sprintf(
 			"%s/%s", site.Settings.SiteRoot, path.Dir(r.URL.EscapedPath())),
