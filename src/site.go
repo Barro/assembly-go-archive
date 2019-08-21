@@ -42,6 +42,7 @@ type SiteTemplates struct {
 	Year        *template.Template
 	Section     *template.Template
 	Entry       *template.Template
+	NotFound    *template.Template
 	Description *template.Template
 }
 
@@ -150,6 +151,11 @@ type EntryContext struct {
 	Section *base.Section
 	Entry   EntryInfo
 	Asset   string
+	Context PageContext
+}
+
+type NotFoundContext struct {
+	Parent  string
 	Context PageContext
 }
 
@@ -474,6 +480,15 @@ func load_templates(settings *base.SiteSettings) (SiteTemplates, error) {
 		}
 	}
 	{
+		contents := template.Must(
+			load_template(settings, "page-contents", "404.html.tmpl", generic))
+		templates.NotFound, err = load_template(
+			settings, "404", "layout.html.tmpl", contents)
+		if err != nil {
+			return templates, err
+		}
+	}
+	{
 		t := template.New("description")
 		templates.Description = template.Must(t.Parse(data))
 	}
@@ -612,7 +627,7 @@ func handle_entry(
 	entry, err_info := get_entry_info(site, path_elements)
 	if err_info != nil {
 		log.Println(err_info)
-		http.NotFound(w, r)
+		handle_not_found(site, w, r)
 		return
 	}
 
@@ -684,7 +699,7 @@ func handle_section(
 	section, err_info := get_section_info(site, path_elements)
 	if err_info != nil {
 		log.Println(err_info)
-		http.NotFound(w, r)
+		handle_not_found(site, w, r)
 		return
 	}
 
@@ -960,7 +975,7 @@ func handle_year(
 	year, err_info := get_year_info(site, path_elements)
 	if err_info != nil {
 		log.Println(err_info)
-		http.NotFound(w, r)
+		handle_not_found(site, w, r)
 		return
 	}
 
@@ -1173,7 +1188,35 @@ var HANDLERS = []RequestHandler{
 	{regexp.MustCompile("^$"), handle_main},
 }
 
-func route_request(site Site,
+func handle_not_found(
+	site Site,
+	w http.ResponseWriter,
+	r *http.Request) {
+	page_context := PageContext{
+		Path: fmt.Sprintf(
+			"%s/%s", site.Settings.SiteRoot, r.URL.EscapedPath()),
+		Title:            "404 page not found",
+		Description:      "404 page not found",
+		SiteRoot:         site.Settings.SiteRoot,
+		Static:           site.Static,
+		YearlyNavigation: get_yearly_navigation(site, 0),
+	}
+	fmt.Println(r.URL.EscapedPath())
+	context := NotFoundContext{
+		Parent: fmt.Sprintf(
+			"%s/%s", site.Settings.SiteRoot, path.Dir(r.URL.EscapedPath())),
+		Context: page_context,
+	}
+	w.WriteHeader(http.StatusNotFound)
+	err_template := render_template(w, site.Templates.NotFound, context)
+	if err_template != nil {
+		server.Ise(w)
+		log.Printf("Internal 404 page error: %s", err_template)
+	}
+}
+
+func route_request(
+	site Site,
 	w http.ResponseWriter,
 	r *http.Request) {
 	path := r.URL.EscapedPath()
@@ -1193,7 +1236,8 @@ func route_request(site Site,
 	}
 	if !found {
 		fmt.Printf("NOTFOUND %s\n", r.URL)
-		http.NotFound(w, r)
+		handle_not_found(site, w, r)
+		return
 	}
 }
 
