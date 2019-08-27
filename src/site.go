@@ -230,23 +230,6 @@ func random_select_entries(year *base.Year, amount int) []*base.Entry {
 	return result
 }
 
-// Takes a preview sample of entries in a section.
-//
-// If the section is ranked, returns the top "amount" entries. If it's
-// not, returns random selection of entries. This is to promote the
-// best ranked entries where it's possible.
-func peek_section_entries(section base.Section, amount int) []*base.Entry {
-	if section.IsRanked {
-		return section.Entries[:amount]
-	}
-
-	var result []*base.Entry
-	for _, index := range rand.Perm(len(section.Entries))[:amount] {
-		result = append(result, section.Entries[index])
-	}
-	return result
-}
-
 // Adds a short cache control header value. This is used for pages
 // that can change, but will very likely not change unless the site
 // layout or page contents is updated.
@@ -273,6 +256,11 @@ func view_author_title(entry base.Entry) string {
 
 var WORDS_MATCH = regexp.MustCompile("(\\w+)|(\\W+)")
 
+// We limit the length of displayable names in the user interface to a
+// maximum length. In addition we ensure that there are word breaks in
+// middle of really long words to prevent wrap bombs. This function
+// does these limiting and wrapping operations and adds "..." to the
+// end of overly long strings.
 func view_cut_string(target string, max_length int) string {
 	MAX_WORD_LENGTH := 23
 	if len(target) <= MAX_WORD_LENGTH {
