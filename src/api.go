@@ -16,12 +16,24 @@ import (
 	"state"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// 128 kilobytes is able to hold 2000 entries with 50 bytes/entry +
-// some extra. We should never be even close to this metadata size for
-// any year, section, or entry.
-var MAX_METADATA_SIZE int64 = 128 * 1024
+// 256 kilobytes is able to hold 4000 entries with 50 bytes/entry +
+// some extra. This should be enough to fit the largest photo
+// galleries that we may have for some years with a lot of photos.
+var MAX_METADATA_SIZE int64 = 256 * 1024
+
+type ExtractSession struct {
+	Path     string
+	Finisher time.Timer
+}
+
+type ApiState struct {
+	Settings  base.SiteSettings
+	SiteState *state.SiteState
+	Sessions  map[string]ExtractSession
+}
 
 type ExtractError struct {
 	message string
@@ -145,7 +157,7 @@ func handle_year(
 	w http.ResponseWriter,
 	r *http.Request) {
 	url_path := fmt.Sprintf("%s/%d", settings.SiteRoot, year)
-	tmpdir, err := ioutil.TempDir(settings.DataDir, ".new-year-")
+	tmpdir, err := ioutil.TempDir(settings.DataDir, ".api.new-year-")
 	if err != nil {
 		_ise(w, err)
 		return
@@ -228,7 +240,7 @@ func handle_section(
 	}
 	var tmpdir string
 	{
-		_tmpdir, err := ioutil.TempDir(yeardir, ".new-section-")
+		_tmpdir, err := ioutil.TempDir(settings.DataDir, ".api.new-section-")
 		if err != nil {
 			_ise(w, err)
 			return
@@ -269,8 +281,7 @@ func handle_section(
 }
 
 func renderer(
-	settings base.SiteSettings,
-	state *state.SiteState,
+	state *ApiState,
 	w http.ResponseWriter,
 	r *http.Request) {
 	switch r.Method {
@@ -297,11 +308,11 @@ func renderer(
 	}
 	year_int, _ := strconv.Atoi(year_str)
 	if len(parts) == 1 {
-		handle_year(settings, state, year_int, w, r)
+		handle_year(state.Settings, state.SiteState, year_int, w, r)
 		return
 	}
 	var year *base.Year
-	for _, year_candidate := range state.Years {
+	for _, year_candidate := range state.SiteState.Years {
 		if year_candidate.Key == year_str {
 			year = year_candidate
 			break
@@ -321,11 +332,37 @@ func renderer(
 		bad_request(w, "Illegal section name '"+section+"'!")
 		return
 	}
-	handle_section(settings, state, year, section, w, r)
+	handle_section(state.Settings, state.SiteState, year, section, w, r)
 }
 
-func Renderer(settings base.SiteSettings, state *state.SiteState) http.HandlerFunc {
+func cleanup_temporary_api_dirs(site_state *state.SiteState) error {
+	files, err_dir := ioutil.ReadDir(site_state.DataDir)
+	if err_dir != nil {
+		return err_dir
+	}
+	for _, file := range files {
+		if !file.IsDir() {
+			continue
+		}
+		if strings.HasPrefix(file.Name(), ".api.") {
+			log.Printf("Deleting a stale temporary directory %s", file.Name())
+			os.RemoveAll(filepath.Join(site_state.DataDir, file.Name()))
+		}
+	}
+
+	return nil
+}
+
+func Renderer(
+	settings base.SiteSettings,
+	site_state *state.SiteState) http.HandlerFunc {
+	api_state := ApiState{
+		Settings:  settings,
+		SiteState: site_state,
+		Sessions:  make(map[string]ExtractSession),
+	}
+	cleanup_temporary_api_dirs(site_state)
 	return func(w http.ResponseWriter, r *http.Request) {
-		renderer(settings, state, w, r)
+		renderer(&api_state, w, r)
 	}
 }
