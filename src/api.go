@@ -19,11 +19,6 @@ import (
 	"time"
 )
 
-// 256 kilobytes is able to hold 4000 entries with 50 bytes/entry +
-// some extra. This should be enough to fit the largest photo
-// galleries that we may have for some years with a lot of photos.
-var MAX_METADATA_SIZE int64 = 256 * 1024
-
 type ExtractSession struct {
 	Path     string
 	Finisher time.Timer
@@ -148,6 +143,10 @@ func replace_path(target string, new string, old string) error {
 		return err_rename
 	}
 	return nil
+}
+
+func start_upload_session() {
+
 }
 
 func handle_year(

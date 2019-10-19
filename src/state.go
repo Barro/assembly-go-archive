@@ -13,10 +13,10 @@ import (
 	"strconv"
 )
 
-// 128 kilobytes is able to hold 2000 entries with 50 bytes/entry +
-// some extra. We should never be even close to this metadata size for
-// any year, section, or entry.
-var MAX_METADATA_SIZE int64 = 128 * 1024
+// 256 kilobytes is able to hold 4000 entries with 50 bytes/entry +
+// some extra. This should be enough to fit the largest photo
+// galleries that we may have for some years with a lot of photos.
+var MAX_METADATA_SIZE int64 = 256 * 1024
 
 type FileInfo struct {
 	Checksum string
