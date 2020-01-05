@@ -32,6 +32,30 @@ $ bazel build //:assembly-archive-pkg --platforms=@io_bazel_rules_go//go/toolcha
 $ bazel build //:assembly-archive-pkg --platforms=@io_bazel_rules_go//go/toolchain:windows_amd64
 ```
 
+### Creating SystemD unit
+
+SystemD unit file for Assembly Archive can be created by building
+`//service:assembly-archive-service` target with appropriate defines:
+
+```bash
+bazel build //service:assembly-archive-service \
+    --define ASMARCHIVE_USER=asmarchive \
+    --define ASMARCHIVE_GROUP=asmarchive \
+    --define ASMARCHIVE_ENVIRONMENT_FILE=/assembly-archive/assembly-archive.env \
+    --define ASMARCHIVE_BIN_DIR=/assembly-archive/bin
+```
+
+This will then create `bazel-bin/service/assembly-archive-service.tar`
+that holds following SystemD units and a launcher binary that should
+be extracted under `/usr/local`:
+
+* `assembly-archive.service` launches the server executable.
+* `assembly-archive-watcher.service` re-launches the service. Used for
+  service updates.
+* `assembly-archive-watcher.path` monitors paths under
+  `ASMARCHIVE_BIN_DIR` for updates and restarts the service when such
+  things is detected.
+
 ## Running
 
 This expects a reverse proxy that only exposes the `/site/` namespace

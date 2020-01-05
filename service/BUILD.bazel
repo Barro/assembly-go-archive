@@ -1,0 +1,6 @@
+load(":service.bzl", "asmarchive_service")
+
+asmarchive_service(
+    name = "assembly-archive-service",
+    tags = ["manual"],
+)

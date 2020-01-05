@@ -1,0 +1,13 @@
+[Unit]
+Description=Assembly Archive server
+
+[Service]
+Type=simple
+ExecStart={{ASMARCHIVE_LAUNCHER}}
+EnvironmentFile={{ASMARCHIVE_ENVIRONMENT_FILE}}
+Restart=always
+User={{ASMARCHIVE_USER}}
+Group={{ASMARCHIVE_GROUP}}
+
+[Install]
+WantedBy=default.target

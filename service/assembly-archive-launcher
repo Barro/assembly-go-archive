@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+declare -r ASMARCHIVE_BIN_DIR=$ASMARCHIVE_BIN_DIR
+declare -r ASMARCHIVE_APP=$ASMARCHIVE_BIN_DIR/assembly-archive
+
+if ! [[ -x $ASMARCHIVE_APP ]]; then
+    echo >&2 "Not an executable: $ASMARCHIVE_APP"
+    exit 1
+fi
+
+function read_var_add_APP_ARGS()
+{
+    local flag=$1
+    local value=$2
+    if [[ -n $value ]]; then
+        APP_ARGS+=("$flag" "$value")
+    fi
+}
+
+declare -a APP_ARGS=("$ASMARCHIVE_APP")
+read_var_add_APP_ARGS -authfile "${ASMARCHIVE_AUTHFILE:-}"
+read_var_add_APP_ARGS -dir-data "${ASMARCHIVE_DIR_DATA:-}"
+read_var_add_APP_ARGS -dir-static "${ASMARCHIVE_DIR_STATIC:-}"
+read_var_add_APP_ARGS -dir-templates "${ASMARCHIVE_DIR_TEMPLATES:-}"
+read_var_add_APP_ARGS -host "${ASMARCHIVE_HOST:-}"
+read_var_add_APP_ARGS -port "${ASMARCHIVE_PORT:-}"
+
+cd "$ASMARCHIVE_BIN_DIR"
+echo -n "Executing:"
+printf " %q" "${APP_ARGS[@]}"
+echo
+exec "${APP_ARGS[@]}"

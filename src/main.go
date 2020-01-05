@@ -123,7 +123,7 @@ func main() {
 	host := flag.String("host", "localhost", "Host interface to listen to")
 	port := flag.Int("port", 8080, "Port to listen to")
 	data_dir := flag.String("dir-data", "_data", "Data directory")
-	static_dir := flag.String("dir-static", "_static", "Static files directory")
+	static_dir := flag.String("dir-static", "static", "Static files directory")
 	templates_dir := flag.String(
 		"dir-templates", "templates", "Site templates directory")
 	authfile := flag.String("authfile", "auth.txt", "File with username:password lines")

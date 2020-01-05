@@ -1,0 +1,10 @@
+[Unit]
+Description=Assembly Archive restarter
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 2
+ExecStart=/bin/systemctl restart assembly-archive.service
+
+[Install]
+WantedBy=default.target
