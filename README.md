@@ -58,11 +58,14 @@ be extracted under `/usr/local`:
 
 ## Running
 
-This expects a reverse proxy that only exposes the `/site/` namespace
-when in production mode as the root path. Otherwise the extracted
-distribution package provides `assembly-archive` that includes all the
-application logic. By default this listens to `localhost` at port
-`8080` and you may want to change that for production:
+Assembly archive expects a reverse proxy that only exposes the
+`/site/` namespace to the public when in production mode as the root
+path.
+
+The extracted distribution package provides `assembly-archive`
+executable that includes all the application logic. This listens to
+`localhost` at port `8080` and you may want to change that for
+production:
 
 ```bash
 $ ./assembly-archive -host 0.0.0.0 -port 1234

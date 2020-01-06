@@ -2,9 +2,11 @@ package state
 
 import (
 	"base"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -251,17 +253,7 @@ func ReadYear(
 	return &result, nil
 }
 
-func ReadSection(
-	fs_directory string,
-	data_path string,
-	path_prefix string,
-	key string) (*base.Section, error) {
-	_, err_key := regexp.MatchString("^[a-z]([a-z0-9]+-)*[a-z0-9]+$", key)
-	if err_key != nil {
-		return nil, fmt.Errorf(
-			"Section for %s has invalid key %s", path_prefix, key)
-	}
-
+func read_section_meta(fs_directory string) (*SectionMeta, error) {
 	data, err_meta := ReadMetaBytes(fs_directory)
 	if err_meta != nil {
 		return nil, err_meta
@@ -273,6 +265,80 @@ func ReadSection(
 	err_unmarshal := json.Unmarshal(data, &meta)
 	if err_unmarshal != nil {
 		return nil, err_unmarshal
+	}
+	return &meta, nil
+}
+
+func ReadSectionMetaCache(fs_directory string) (*base.Section, error) {
+	source := filepath.Join(fs_directory, "meta.aggregate.gob")
+	input, err_input := os.Open(source)
+	if err_input != nil {
+		return nil, fmt.Errorf("No cached metadata file exists: %s", source)
+	}
+	decoder := gob.NewDecoder(input)
+	var result base.Section
+	if err := decoder.Decode(&result); err != nil {
+		defer os.Remove(source)
+		return nil, fmt.Errorf(
+			"Error while reading metadata file %s, removing: %s", source, err)
+	}
+
+	// Sanity check to see that cached metadata corresponds to the
+	// latest section metadata:
+	section_meta, err_meta := read_section_meta(fs_directory)
+	if err_meta != nil {
+		return nil, err_meta
+	}
+
+	if len(section_meta.Entries) != len(result.Entries) {
+		return nil, fmt.Errorf(
+			"The amount of cached entries differs from the read entries at %s",
+			fs_directory)
+	}
+	for entry_index, entry_key := range section_meta.Entries {
+		cached_entry := result.Entries[entry_index]
+		if entry_key != cached_entry.Key {
+			return nil, fmt.Errorf(
+				"Cached entry at index %d is not correct %s != %s",
+				entry_index,
+				entry_key,
+				cached_entry.Key)
+		}
+	}
+
+	return &result, nil
+}
+
+func WriteSectionMetaCache(
+	fs_directory string, section *base.Section) error {
+	var tmpfile *os.File
+	{
+		_tmpfile, err := ioutil.TempFile(fs_directory, ".aggregate.gob")
+		if err != nil {
+			return err
+		}
+		tmpfile = _tmpfile
+	}
+	defer os.Remove(tmpfile.Name())
+	encoder := gob.NewEncoder(tmpfile)
+	if err := encoder.Encode(*section); err != nil {
+		return err
+	}
+	target := filepath.Join(fs_directory, "meta.aggregate.gob")
+	if err := os.Rename(tmpfile.Name(), target); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReadSectionMetaFiles(
+	fs_directory string,
+	data_path string,
+	path_prefix string,
+	key string) (*base.Section, error) {
+	meta, err_meta := read_section_meta(fs_directory)
+	if err_meta != nil {
+		return nil, err_meta
 	}
 	var entries []*base.Entry
 	for _, entry_key := range meta.Entries {
@@ -296,6 +362,36 @@ func ReadSection(
 		Entries:     entries,
 	}
 	return &result, nil
+}
+
+func ReadSection(
+	fs_directory string,
+	data_path string,
+	path_prefix string,
+	key string) (*base.Section, error) {
+	_, err_key := regexp.MatchString("^[a-z]([a-z0-9]+-)*[a-z0-9]+$", key)
+	if err_key != nil {
+		return nil, fmt.Errorf(
+			"Section for %s has invalid key %s", path_prefix, key)
+	}
+	{
+		section, err_section := ReadSectionMetaCache(fs_directory)
+		if err_section == nil {
+			return section, nil
+		}
+		log.Println(err_section)
+	}
+
+	section, err_section := ReadSectionMetaFiles(
+		fs_directory, data_path, path_prefix, key)
+	if err_section != nil {
+		return nil, err_section
+	}
+	err_meta_write := WriteSectionMetaCache(fs_directory, section)
+	if err_meta_write != nil {
+		log.Println(err_meta_write)
+	}
+	return section, nil
 }
 
 func get_entry_image(
@@ -389,7 +485,16 @@ func ReadEntry(
 	return &result, nil
 }
 
+func register_gob_interfaces() {
+	gob.Register(base.Section{})
+	gob.Register(YoutubeAsset{})
+	gob.Register(ImageAsset{})
+	gob.Register(VimeoAsset{})
+}
+
 func New(fs_directory string, site_root string) (*SiteState, error) {
+	register_gob_interfaces()
+
 	infos, err_dir := ioutil.ReadDir(fs_directory)
 	if err_dir != nil {
 		return nil, err_dir

@@ -104,6 +104,11 @@ func extract_tarball(directory string, gzip_stream io.Reader) error {
 		} else if strings.Contains(header.Name, "//") {
 			// Just in case forbid double slashes:
 			return &ExtractError{"Detected unsafe path leading to potential absolute path in archive: " + header.Name}
+		} else if strings.Contains(header.Name, ".aggregate.") {
+			// These aggregate meta files will be created by state
+			// package. They are basically metadata caches controlled
+			// by this program.
+			return &ExtractError{"Illegal aggregate metadata file was included in the import: " + header.Name}
 		}
 
 		target := filepath.Join(directory, header.Name)
