@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    echo >&2 "Usage: $0 [signing-key]"
+    exit 1
+fi
+
+SIGNING_KEY=$1
+INFILE=$(readlink -f "{{SRC}}")
+OUTFILE=$INFILE.sig
+
+echo >&2 "Signing with key: $SIGNING_KEY"
+echo >&2 "From: $INFILE"
+echo >&2 "To: $OUTFILE"
+
+openssl dgst -sign "$SIGNING_KEY" -out "$OUTFILE" "$INFILE"

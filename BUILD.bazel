@@ -1,5 +1,6 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load(":devserver.bzl", "devserver")
+load(":openssl-dgst-sign.bzl", "openssl_dgst_sign")
 
 genrule(
     name = "assembly-archive-alias",
@@ -25,4 +26,9 @@ devserver(
     app = "//src:assembly-archive",
     static = "//static",
     templates = "//templates",
+)
+
+openssl_dgst_sign(
+    name = "sign-pkg",
+    src = ":assembly-archive-pkg",
 )
