@@ -28,16 +28,16 @@ def _asmarchive_service_create_impl(ctx):
         ASMARCHIVE_USER = ctx.var.get("ASMARCHIVE_USER", "nobody"),
         ASMARCHIVE_GROUP = ctx.var.get("ASMARCHIVE_GROUP", "nogroup"),
     )
-    path_changed_lines = []
+    path_lines = []
     for path in bin_paths:
-        path_changed_lines.append(
-            "PathChanged=%s/%s" % (
+        path_lines.append(
+            "PathModified=%s/%s" % (
                 substitutions_raw["ASMARCHIVE_BIN_DIR"],
                 path,
             ),
         )
-    substitutions_raw["ASMARCHIVE_SYSTEMD_PATH_CHANGED_LINES"] = "\n".join(
-        path_changed_lines,
+    substitutions_raw["ASMARCHIVE_SYSTEMD_PATH_LINES"] = "\n".join(
+        path_lines,
     )
     substitutions = dict([
         ("{{%s}}" % key, value)
