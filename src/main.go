@@ -146,6 +146,7 @@ func main() {
 		http.HandleFunc("/exit/", exit_forbidden)
 	}
 
+	log.Printf("Recreating state from %s", settings.DataDir)
 	state, err_state := state.New(settings.DataDir, settings.SiteRoot)
 	if err_state != nil {
 		log.Fatal(err_state)
