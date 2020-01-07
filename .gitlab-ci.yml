@@ -1,0 +1,26 @@
+default:
+  image:
+    name: l.gcr.io/google/bazel:2.0.0
+    entrypoint: [""]
+  before_script:
+    - echo "build --disk_cache=$CI_PROJECT_DIR/.cache" >> .bazelrc
+
+stages:
+  - build
+
+cache:
+  key: bazel_cache
+  paths:
+    - .cache/
+
+build:
+  stage: build
+  script:
+    - ci/gitlab-ci.sh "$GITLAB_RELEASES_KEY_PRIVATE_FILE"
+    - cp "$GITLAB_RELEASES_KEY_PUBLIC_FILE" assembly-archive-pkg.pub.pem
+  artifacts:
+    paths:
+      - assembly-archive-pkg.tar
+      - assembly-archive-pkg.tar.sig
+      - assembly-archive-pkg.pub.pem
+    expire_in: 2 weeks
