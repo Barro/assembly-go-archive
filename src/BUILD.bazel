@@ -2,6 +2,12 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
+    name = "fileperm",
+    srcs = ["fileperm.go", "fileperm-windows.go"],
+    importpath = "fileperm",
+)
+
+go_library(
     name = "base",
     srcs = ["base.go"],
     importpath = "base",
@@ -44,6 +50,7 @@ go_library(
     srcs = ["server.go"],
     importpath = "server",
     visibility = ["//test:__subpackages__"],
+    deps = [":fileperm"],
 )
 
 go_binary(

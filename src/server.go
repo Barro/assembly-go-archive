@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"crypto/subtle"
+	"fileperm"
 	"log"
 	"net/http"
 	"os"
@@ -17,21 +18,10 @@ func (error *UsernamePasswordError) Error() string {
 	return error.message
 }
 
-func is_file_wide_open(filename string) bool {
-	stats, err := os.Stat(filename)
-	if err != nil {
-		return false
-	}
-	if stats.Mode().Perm()&0044 != 0 {
-		return true
-	}
-	return false
-}
-
 type AuthData map[string]string
 
 func read_auth_data(filename string) (AuthData, error) {
-	if is_file_wide_open(filename) {
+	if fileperm.IsFileWideOpen(filename) {
 		return nil, &UsernamePasswordError{"File " + filename + " should only be readable by the current user!"}
 	}
 	m := make(map[string]string)
@@ -79,7 +69,7 @@ func Ise(w http.ResponseWriter) {
 }
 
 func BasicAuth(auth_filename string, handler http.HandlerFunc) http.HandlerFunc {
-	if is_file_wide_open(auth_filename) {
+	if fileperm.IsFileWideOpen(auth_filename) {
 		log.Fatal("File " + auth_filename + " should only be readable by the current user!")
 	}
 
