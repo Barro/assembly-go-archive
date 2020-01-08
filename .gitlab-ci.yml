@@ -17,7 +17,7 @@ build:
   stage: build
   script:
     - ci/gitlab-ci.sh "$GITLAB_RELEASES_KEY_PRIVATE_FILE"
-    - cp "$GITLAB_RELEASES_KEY_PUBLIC_FILE" assembly-archive-pkg.pub.pem
+    - cp "$GITLAB_RELEASES_KEY_PUBLIC_FILE" assembly-archive.pub.pem
   artifacts:
     paths:
       - "assembly-archive-*.tar"
