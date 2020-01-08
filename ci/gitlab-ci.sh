@@ -22,7 +22,7 @@ for platform in "${TARGET_PLATFORMS[@]}"; do
     cp bazel-bin/assembly-archive-pkg.tar assembly-archive-"$platform".tar
 
     if [[ -f $GITLAB_RELEASES_KEY_PRIVATE_FILE ]]; then
-        bazel run :sign-pkg "$GITLAB_RELEASES_KEY_PRIVATE_FILE"
+        bazel --platforms=@io_bazel_rules_go//go/toolchain:"$platform" run :sign-pkg "$GITLAB_RELEASES_KEY_PRIVATE_FILE"
         cp bazel-bin/assembly-archive-pkg.tar.sig assembly-archive-"$platform".tar.sig
     else
         echo "NO-SIGNATURE-IN-UNPROTECTED-BRANCH" > assembly-archive-"$platform".tar.sig
