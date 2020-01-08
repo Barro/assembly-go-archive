@@ -20,7 +20,7 @@ build:
     - cp "$GITLAB_RELEASES_KEY_PUBLIC_FILE" assembly-archive-pkg.pub.pem
   artifacts:
     paths:
-      - assembly-archive-pkg.tar
-      - assembly-archive-pkg.tar.sig
-      - assembly-archive-pkg.pub.pem
+      - "assembly-archive-*.tar"
+      - "assembly-archive-*.tar.sig"
+      - "assembly-archive.pub.pem"
     expire_in: 2 weeks
