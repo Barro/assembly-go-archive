@@ -19,11 +19,11 @@ TARGET_PLATFORMS=(
 )
 for platform in "${TARGET_PLATFORMS[@]}"; do
     bazel build ...:all --platforms=@io_bazel_rules_go//go/toolchain:"$platform"
-    cp bazel-bin/assembly-archive-pkg.tar assembly-archive-"$platforms".tar
+    cp bazel-bin/assembly-archive-pkg.tar assembly-archive-"$platform".tar
 
     if [[ -f $GITLAB_RELEASES_KEY_PRIVATE_FILE ]]; then
         bazel run :sign-pkg "$GITLAB_RELEASES_KEY_PRIVATE_FILE"
-        cp bazel-bin/assembly-archive-pkg.tar.sig assembly-archive-"$platforms".tar.sig
+        cp bazel-bin/assembly-archive-pkg.tar.sig assembly-archive-"$platform".tar.sig
     else
         echo "NO-SIGNATURE-IN-UNPROTECTED-BRANCH" > assembly-archive-"$platform".tar.sig
     fi
