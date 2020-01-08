@@ -111,3 +111,31 @@ $ bazel test ...:all
 # ibazel will re-run tests immediately when something changes:
 $ ibazel test ...:all
 ```
+
+## Deploying
+
+The
+[GitLab instance of this repository](https://gitlab.com/Barro/assembly-archive)
+provides pre-built binaries that have a relatively short
+lifetime. When a newer version of Assembly Archive binaries is
+published, it can be verified with following type of command:
+
+```bash
+openssl dgst \
+    -verify assembly-archive.pub.pem \
+    -signature assembly-archive-linux_amd64.tar.sig \
+    assembly-archive-linux_amd64.tar
+```
+
+The contents of `assembly-archive.pub.pem` file currently is:
+
+```
+-----BEGIN PUBLIC KEY-----
+MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEOd3EAKmlJPzppm3WTSlr6RjhSHrxishA
+PGXuelBjmnIOOKOtL+REtkc1o4btrvVvgtHY+xV75hqi+CEYAQoBsw==
+-----END PUBLIC KEY-----
+```
+
+This signature verification and replacing old binaries with a newer
+ones is done automatically with
+[`ci/update-binaries.sh`](ci/update-binaries.sh) script.
